@@ -1,0 +1,24 @@
+.visiojs_selected_wire {
+  stroke: rgb(167, 35, 235) !important;
+}
+.visiojs_bad_wire {
+  stroke: rgb(167, 25, 106) !important;
+}
+.visiojs_good_wire {
+  stroke: rgb(25, 167, 94) !important;
+}
+.visiojs_selected_connector {
+  fill: rgb(167, 35, 235);
+}
+.visiojs_wire {
+  cursor: pointer;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke: black;
+}
+.visiojs_hover_rect {
+  stroke: blue;
+  stroke-dasharray: "5,5";
+  pointer-events: "none";
+}
