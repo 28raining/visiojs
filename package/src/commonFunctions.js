@@ -19,22 +19,23 @@ export function rotatePoints(x, y, rotation) {
   return [newX, newY];
 }
 
-export function getConnectorLocation(shapeDom, shapeID, connectorID, initialState, snapToGrid) {
+export function getConnectorLocation(shapeDom, shapeID, connectorID, initialState, snapAndClipToGrid) {
   // console.log("getConnectorLocation called with shapeDom:", shapeDom, "shapeID:", shapeID, "connectorID:", connectorID, "initialState:", initialState);
   const [gStartX, gStartY] = [initialState["shapes"][shapeID].x, initialState["shapes"][shapeID].y];
-  var connStartX = initialState["shapes"][shapeID].connectors[connectorID].x;
-  var connStartY = initialState["shapes"][shapeID].connectors[connectorID].y;
+  var connStartX = initialState["shapes"][shapeID].connectors[connectorID][0];
+  var connStartY = initialState["shapes"][shapeID].connectors[connectorID][1];
 
   const rotationStart = getGroupRotation(shapeDom);
   [connStartX, connStartY] = rotatePoints(connStartX, connStartY, rotationStart);
 
-  return { x: snapToGrid(gStartX + connStartX), y: snapToGrid(gStartY + connStartY) };
+  return snapAndClipToGrid([gStartX + connStartX, gStartY + connStartY]);
+  // return { x: snapped[0], y: snapped[1] };
 }
 
 
 export const defaultSettings = {
   gridSize: 16,
-  width: 2400,
+  width: 2432,
   height: 1792,
   defaultZoom: 1,
   maxZoom: 2,

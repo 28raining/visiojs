@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import * as pako from "pako";
 import { visiojs_router, userDraggingElbow } from "./router.js";
 import { drawShape } from "./drawShape.js";
 import { getConnectorLocation, defaultSettings, setDefaults } from "./commonFunctions.js";
@@ -23,15 +24,16 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
   var g_shapes;
   var g_svgGrid;
   var spacing;
+  var zoomEnabled = false;
 
   initialState = setDefaults(initialState);
   const settings = { ...initialState.settings };
 
   function init(enableUndo = true) {
     spacing = settings.gridSize;
-    svg = d3.select("#visiojs_top").attr("style", "display:block");
-    g_wholeThing = d3.select("#wholeThing");
-    if (g_wholeThing.empty()) g_wholeThing = svg.append("g").attr("id", "wholeThing");
+    svg = d3.select("#visiojs_top");
+    g_wholeThing = d3.select("#visiojs_wholeThing");
+    if (g_wholeThing.empty()) g_wholeThing = svg.append("g").attr("id", "visiojs_wholeThing");
     //remove old listeners
     svg.on("."); // removes all event listeners from the element
 
@@ -50,17 +52,7 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
       const droppedData = JSON.parse(raw);
       const point = d3.pointer(e, g_wholeThing.node()); // ← gives [x, y] in SVG space
       const [x, y] = point;
-      var snappedX = snapToGrid(x);
-      var snappedY = snapToGrid(y);
-      //prevent drop being run twice - if the previous entry has the same x and y
-      for (const s of initialState["shapes"]) {
-        if (s) {
-          if (s.x === snappedX && s.y === snappedY) {
-            console.log("Already there");
-            return;
-          }
-        }
-      }
+      var [snappedX, snappedY] = snapAndClipToGrid([x, y]);
       addShape(droppedData, snappedX, snappedY);
     });
 
@@ -75,67 +67,106 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
       init(false);
     });
 
-    domWidth = snapToGrid(svg.node().getBoundingClientRect().width); // initialState.settings.width;  //putting width and height in CSS allows the size to be dynamically set (e.g. like 90vh)
-    domHeight = snapToGrid(svg.node().getBoundingClientRect().height); //initialState.settings.height;
+    const boundingRect = svg.node().getBoundingClientRect();
+    domWidth = Math.round(boundingRect.width / spacing) * spacing;
+    domHeight = Math.round(boundingRect.height / spacing) * spacing;
 
     //coloring for the connectors, some nice gradient fill
-    var defs = d3.select("#svgDefs");
-    if (defs.empty()) defs = svg.append("defs").attr("id", "svgDefs");
+    var defs = d3.select("#visiojs_svgDefs");
+    if (defs.empty()) {
+      defs = svg.append("defs").attr("id", "visiojs_svgDefs");
 
-    // const defs = svg.append("defs").attr("id", "svgDefs");
-    const gradient = defs
-      .append("linearGradient")
-      .attr("id", "connector_fill")
-      .attr("x1", 0)
-      .attr("y1", 1)
-      .attr("x2", 0)
-      .attr("y2", 0);
-    gradient.append("stop").attr("offset", "0%").attr("stop-color", "#4f6870");
-    gradient.append("stop").attr("offset", "100%").attr("stop-color", "#678792");
+      const gradient = defs.append("linearGradient").attr("id", "visiojs_connector_fill").attr("x1", 0).attr("y1", 1).attr("x2", 0).attr("y2", 0);
+      gradient.append("stop").attr("offset", "0%").attr("stop-color", "#4f6870");
+      gradient.append("stop").attr("offset", "100%").attr("stop-color", "#678792");
 
-    const elbowGradient = defs
-      .append("linearGradient")
-      .attr("id", "elbow_fill")
-      .attr("x1", 0)
-      .attr("y1", 1)
-      .attr("x2", 0)
-      .attr("y2", 0);
-    elbowGradient.append("stop").attr("offset", "0%").attr("stop-color", "#cacaca");
-    elbowGradient.append("stop").attr("offset", "100%").attr("stop-color", "#fdfdfd");
+      const elbowGradient = defs.append("linearGradient").attr("id", "visiojs_elbow_fill").attr("x1", 0).attr("y1", 1).attr("x2", 0).attr("y2", 0);
+      elbowGradient.append("stop").attr("offset", "0%").attr("stop-color", "#cacaca");
+      elbowGradient.append("stop").attr("offset", "100%").attr("stop-color", "#fdfdfd");
+    }
 
     drawGrid(g_wholeThing, settings.width, settings.height, spacing);
 
-    g_wires = d3.select("#wires");
-    if (g_wires.empty()) g_wires = g_wholeThing.append("g").attr("id", "wires");
-    g_shapes = d3.select("#shapes");
-    if (g_shapes.empty()) g_shapes = g_wholeThing.append("g").attr("id", "shapes");
+    g_wires = d3.select("#visiojs_wires");
+    if (g_wires.empty()) g_wires = g_wholeThing.append("g").attr("id", "visiojs_wires");
+    g_shapes = d3.select("#visiojs_shapes");
+    if (g_shapes.empty()) g_shapes = g_wholeThing.append("g").attr("id", "visiojs_shapes");
 
     // Zoom behavior
-    zoomHandler(settings.width, settings.height, domWidth, domHeight);
+    // zoomHandler(settings.width, settings.height, domWidth, domHeight);
+    //initialize to put point in the center of the screen
+    const minZoom = Math.min(domWidth / settings.width, domHeight / settings.height);
+    const zoom = d3
+      .zoom()
+      .scaleExtent([minZoom, settings.maxZoom])
+      .clickDistance(10) // Prevents click suppression on touch devices
+      .translateExtent([
+        [-settings.width / 2, -settings.height / 2],
+        [settings.width / 2, settings.height / 2],
+      ])
+      .on("zoom", (event) => g_wholeThing.attr("transform", event.transform));
+    const initialTransform = d3.zoomIdentity.translate(domWidth / 2, domHeight / 2).scale(settings.defaultZoom);
+    svg.call(zoom.transform, initialTransform);
 
     //Start reading from the json state
     drawFromJson(g_wholeThing, svg);
     if (enableUndo) stateChanged(initialState); //to prevent creating new states on window resize
+
+    const zoomButtonWidth = 100;
+    //create toggle zoom button
+    // if (d3.select("#visiojs_toggle_button").empty())
+    const zoomButton = d3.select("#visiojs_toggle_button").empty()
+      ? svg
+          .append("foreignObject")
+          .attr("x", domWidth - zoomButtonWidth - 5)
+          .attr("y", 5)
+          .attr("width", zoomButtonWidth)
+          .attr("height", 50)
+          .append("xhtml:body")
+          .style("margin", "0px") // remove default body margin
+          .style("background", "transparent") // remove default body margin
+          .append("button")
+          .attr("id", "visiojs_toggle_button")
+          .text("Enable Zoom")
+      : d3.select("#visiojs_toggle_button");
+
+    zoomButton.on("click", function () {
+      if (zoomEnabled) {
+        svg.on(".zoom", null); // remove zoom
+        zoomButton.text("Enable Zoom");
+        zoomButton.attr("class", null);
+        zoomEnabled = false;
+      } else {
+        // zoomHandler(settings.width, settings.height, domWidth, domHeight);
+        svg.call(zoom).on("dblclick.zoom", null);
+        zoomButton.text("Disable Zoom");
+        zoomButton.attr("class", "visiojs_toggle_button_active");
+        zoomEnabled = true;
+      }
+    });
   }
 
-  function snapToGrid(value) {
-    return Math.round(value / spacing) * spacing;
+  function snapAndClipToGrid(value) {
+    return [
+      Math.min(Math.max(Math.round(value[0] / spacing) * spacing, -settings.width / 2), settings.width / 2),
+      Math.min(Math.max(Math.round(value[1] / spacing) * spacing, -settings.height / 2), settings.height / 2),
+    ];
   }
 
   function deselectAll() {
     // console.log("deselecting all");
-    g_wholeThing.selectAll(".visiojs_hover_rect").classed("visiojs_hover_rect", false);
-    g_wholeThing.selectAll(".hover-rotate").remove();
+    g_wholeThing.selectAll(".visiojs_hover_rect").style("opacity", "0");
+    g_wholeThing.selectAll(".visiojs_hover_rotate").style("visibility", "hidden");
 
-    // g_wholeThing.selectAll(".hover-rotate").classed("hover-rotate", false);
+    // g_wholeThing.selectAll(".visiojs_hover_rotate").classed("visiojs_hover_rotate", false);
     g_wholeThing.selectAll(".visiojs_selected_wire").classed("visiojs_selected_wire", false);
-    g_wholeThing
-      .selectAll(".visiojs_selected_connector")
-      .classed("visiojs_selected_connector", false);
+    g_wholeThing.selectAll(".visiojs_selected_connector").classed("visiojs_selected_connector", false);
 
-    g_wholeThing.selectAll(".elbow").remove();
+    g_wholeThing.selectAll(".visiojs_elbow").remove();
 
     selected.length = 0;
+    //re-enable clicks on the shapes
+    d3.select(`#visiojs_shapes`).style("pointer-events", "auto").style("opacity", "1.0");
   }
 
   function drawWire(id) {
@@ -161,42 +192,15 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
       nodeWireGroup = g.insert("g").attr("id", `wire_${id}`);
       nodeWire = nodeWireGroup.insert("path").attr("class", "visiojs_wire");
     } else nodeWire = nodeWireGroup.select("path");
-    // //FIXME - can this be common code? - location c
-    // nodeWire
-    //   // .attr("d", pathData)
-    //   .attr("stroke", "#888888");
-    // var allPoints = [{ x: gStartX + connStartX, y: gStartY + connStartY }];
-    // if (wire.points) allPoints = allPoints.concat(wire.points);
-    // allPoints.push({ x: gEndX + connEndX, y: gEndY + connEndY });
-    const startConnector = getConnectorLocation(
-      startShape,
-      wire.start.shapeID,
-      wire.start.connectorID,
-      initialState,
-      snapToGrid
-    );
-    const endConnector = getConnectorLocation(
-      endShape,
-      wire.end.shapeID,
-      wire.end.connectorID,
-      initialState,
-      snapToGrid
-    );
+    const startConnector = getConnectorLocation(startShape, wire.start.shapeID, wire.start.connectorID, initialState, snapAndClipToGrid);
+    const endConnector = getConnectorLocation(endShape, wire.end.shapeID, wire.end.connectorID, initialState, snapAndClipToGrid);
     // console.log(startConnector, "startConnector");
     // console.log(endConnector, "endConnector");
     const allPoints = [startConnector, ...wire.points, endConnector];
 
     //drawing the wire from the saved state
     // console.log("bp a")
-    const optimizedPoints = visiojs_router(
-      "manhattan",
-      allPoints,
-      snapToGrid,
-      nodeWireGroup,
-      null,
-      (o) => moveElbow(o),
-      id
-    );
+    const optimizedPoints = visiojs_router("manhattan", allPoints, snapAndClipToGrid, nodeWireGroup, null, (o) => moveElbow(o), id);
 
     // //make this onClick into common code?
     // nodeWireGroup.on("mouseover", function () {
@@ -209,25 +213,16 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
       e.stopPropagation(); //prevent the click from propagating to the svg element
       if (wireStart.shapeID !== null) return; //actively drawing a wire
 
-      var connector1 = g_wholeThing.select(
-        `#connector_${wire.start.shapeID}_${wire.start.connectorID}`
-      );
-      var connector2 = g_wholeThing.select(
-        `#connector_${wire.end.shapeID}_${wire.end.connectorID}`
-      );
+      var connector1 = g_wholeThing.select(`#connector_${wire.start.shapeID}_${wire.start.connectorID}`);
+      var connector2 = g_wholeThing.select(`#connector_${wire.end.shapeID}_${wire.end.connectorID}`);
+
+      console.log("removing pointer events from shapes");
+      d3.select(`#visiojs_shapes`).style("pointer-events", "none").style("opacity", "0.9");
 
       //call this to add the elbows to the wire
       const allPoints2 = [startConnector, ...wire.points, endConnector];
 
-      visiojs_router(
-        "manhattan",
-        allPoints2,
-        snapToGrid,
-        nodeWireGroup,
-        true,
-        (o) => moveElbow(o),
-        id
-      );
+      visiojs_router("manhattan", allPoints2, snapAndClipToGrid, nodeWireGroup, true, (o) => moveElbow(o), id);
 
       // clickedShape = true;
       nodeWire.classed("visiojs_selected_wire", true);
@@ -247,7 +242,12 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
         connector2.classed("visiojs_selected_connector", false);
         nodeWireGroup.lower(); //move it above other paths
         g_svgGrid.lower(); //move it above other paths
-        nodeWireGroup.selectAll(".elbow").remove(); //remove elbows
+        nodeWireGroup.selectAll(".visiojs_elbow").remove(); //remove elbows
+        //if selected contains no ids containing "wire" then re-enable clicks on the shapes
+        if (selected.filter((s) => s.startsWith("wire")).length == 0) {
+          console.log("re-enabling pointer events on shapes");
+          d3.select(`#visiojs_shapes`).style("pointer-events", "auto").style("opacity", "1.0");
+        }
         // g_wholeThing.selectAll(".visiojs_selected_connector").classed("visiojs_selected_connector", false);
       }
     });
@@ -263,7 +263,7 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
           data: s,
           selected,
           wireStart,
-          snapToGrid,
+          snapAndClipToGrid,
           initialState,
           redrawWireOnShape,
           stateChanged,
@@ -277,9 +277,8 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
 
   // Function to draw grid lines
   function drawGrid(g_wholeThing, SVG_width, SVG_height, spacing) {
-    if (!d3.select("#grid").empty()) return;
-    // console.log('grid exists',d3.select(`#grid`).empty());
-    g_svgGrid = g_wholeThing.append("g").attr("id", "grid");
+    if (!d3.select("#visiojs_grid").empty()) return;
+    g_svgGrid = g_wholeThing.append("g").attr("id", "visiojs_grid");
     const lines = [];
 
     // Vertical lines
@@ -306,13 +305,11 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
       .selectAll("line.grid-line")
       .data(lines)
       .join("line")
-      .attr("class", "grid-line")
+      .attr("class", "visiojs_grid_line")
       .attr("x1", (d) => d.x1)
       .attr("y1", (d) => d.y1)
       .attr("x2", (d) => d.x2)
-      .attr("y2", (d) => d.y2)
-      .attr("stroke", "rgb(240, 240, 240)")
-      .attr("stroke-width", 1);
+      .attr("y2", (d) => d.y2);
   }
 
   const zoomHandler = (width, height, domWidth, domHeight) => {
@@ -327,13 +324,7 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
       ])
       .on("zoom", (event) => g_wholeThing.attr("transform", event.transform));
 
-    svg.call(zoom);
-
-    //initialize to put point in the center of the screen
-    const initialTransform = d3.zoomIdentity
-      .translate(domWidth / 2, domHeight / 2)
-      .scale(settings.defaultZoom);
-    svg.call(zoom.transform, initialTransform);
+    svg.call(zoom).on("dblclick.zoom", null);
 
     return zoom;
   };
@@ -349,19 +340,17 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
         //when the shape is dragged, move the first elbow by the same amount
         if (origXY.length > 0 && initialState.wires[w].points.length > 0) {
           const original = origXY[connectorID];
-          // const origX = tempOrigX.x;
-          // const origY = tempOrigX.y;
           const firstPoint = initialState.wires[w].points[0];
           const lastPoint = initialState.wires[w].points[initialState.wires[w].points.length - 1];
 
           if (shapeIsStart) {
             // console.log("here start");
-            if (original.x == firstPoint.x) firstPoint.x += delta.x;
-            else firstPoint.y += delta.y;
+            if (original[0] == firstPoint[0]) firstPoint[0] += delta.x;
+            else firstPoint[1] += delta.y;
           } else if (shapeIsEnd) {
             // console.log("here end", origX, origY, lastPoint, delta);
-            if (original.x == lastPoint.x) lastPoint.x += delta.x;
-            else lastPoint.y += delta.y;
+            if (original[0] == lastPoint[0]) lastPoint[0] += delta.x;
+            else lastPoint[1] += delta.y;
           }
         }
 
@@ -376,7 +365,7 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
   const moveElbow = (o) => {
     userDraggingElbow({
       d3,
-      snapToGrid,
+      snapAndClipToGrid,
       elbSvg: o.elbow,
       wireID: o.wireID,
       initialState,
@@ -395,15 +384,21 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
     if (x !== null) droppedData.x = x;
     if (y !== null) droppedData.y = y;
     // console.log("Dropped at:", x, y);
-    initialState["shapes"].push(droppedData);
+    var index = initialState["shapes"].indexOf(null);
+    if (index == -1) {
+      index = initialState["shapes"].length; //if no null entry, then add to the end
+      initialState["shapes"].push(droppedData);
+    } else {
+      initialState["shapes"][index] = droppedData;
+    }
     stateChanged(initialState);
     drawShape({
-      id: initialState["shapes"].length - 1,
+      id: index,
       data: droppedData,
       selected,
       selectIt: true,
       wireStart,
-      snapToGrid,
+      snapAndClipToGrid,
       initialState,
       redrawWireOnShape,
       stateChanged,
@@ -469,7 +464,7 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
             data: initialState.shapes[s],
             selected,
             wireStart,
-            snapToGrid,
+            snapAndClipToGrid,
             initialState,
             redrawWireOnShape,
             stateChanged,
@@ -499,10 +494,31 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
     } else console.log("it's all the same");
   }
 
+  function stateToURLParam() {
+    const jsonString = JSON.stringify(initialState);
+    const compressed = pako.deflate(jsonString, { to: "string" });
+    // Encode the compressed data to make it URL-safe
+    const encodedCompressed = encodeURIComponent(btoa(String.fromCharCode(...compressed)));
+    return encodedCompressed;
+  }
+
+  function URLToState(urlParameter) {
+    try {
+      const compressedBinary = Uint8Array.from(atob(decodeURIComponent(urlParameter)), (char) => char.charCodeAt(0));
+      const decompressed = pako.inflate(compressedBinary, { to: "string" }); // Decompress the data using pako
+      const decodedObject = JSON.parse(decompressed); // Parse the decompressed JSON string into an object
+      initialState = setDefaults(decodedObject);
+    } catch (e) {
+      console.error("Error decoding URL state:", e);
+    }
+  }
+
   return {
     addShape,
     deleteSelected,
     redraw,
+    stateToURLParam,
+    URLToState,
     init,
   };
 };

@@ -3,7 +3,7 @@ import { getGroupTranslate, getGroupRotation, rotatePoints } from "./commonFunct
 export function visiojs_router(
   pathType,
   points,
-  snapToGrid,
+  snapAndClipToGrid,
   wireGroup,
   showElbows,
   moveElbowCallback,
@@ -23,65 +23,28 @@ export function visiojs_router(
   var linePoints = [];
   if (pathType == "manhattan") {
     const pathGen = d3.path();
-    pathGen.moveTo(points[0].x, points[0].y);
-    linePoints.push([points[0].x, points[0].y]);
+    pathGen.moveTo(...points[0]);
+    linePoints.push(points[0]);
 
     var start, end, mid;
     var pointsDeepCopy = points;
-    // var pointsDeepCopy = points.map((pRaw, i) => {
-    //   var p = { ...pRaw };
-    //   if (i == 1) {
-    //     if (p.x === null) p.x = points[0].x;
-    //     if (p.y === null) p.y = points[0].y;
-    //   }
-    //   if (i == points.length - 2) {
-    //     if (p.x === null) p.x = points[points.length - 1].x;
-    //     if (p.y === null) p.y = points[points.length - 1].y;
-    //   }
-    //   return p;
-    // });
-    // console.log("points", pointsDeepCopy)
-
-    // //remove redundant points (where three points are in a straight line)
-    // for (i = 1; i < pointsDeepCopy.length - 2; i++) {
-    //   start = pointsDeepCopy[i - 1];
-    //   mid = pointsDeepCopy[i];
-    //   end = pointsDeepCopy[i+1];
-    //   if ((start.x == mid.x && mid.x == end.x) || (start.y == mid.y && mid.y == end.y)) {
-    //     //remove the middle point
-    //     pointsDeepCopy.splice(i, 1);
-    //     i--;
-    //   }
-    // }
 
     for (i = 1; i < pointsDeepCopy.length; i++) {
       start = pointsDeepCopy[i - 1];
       end = pointsDeepCopy[i];
-      if (start.x == end.x || start.y == end.y) {
-        // pathGen.lineTo(end.x, end.y);
-        linePoints.push([end.x, end.y]);
+      if (start[0] == end[0] || start[1] == end[1]) {
+        linePoints.push(end);
       } else {
-        var stepX = snapToGrid((end.x - start.x) / 2); // gridSpacing * Math.round((end.x - start.x) / (2 * gridSpacing));
+        var stepX = snapAndClipToGrid([(end[0] - start[0]) / 2, 0])[0]; // gridSpacing * Math.round((end.x - start.x) / (2 * gridSpacing));
 
-        // pathGen.lineTo(start.x + stepX, start.y);
-        // pathGen.lineTo(start.x + stepX, end.y);
-        // pathGen.lineTo(end.x, end.y);
-        linePoints.push([start.x + stepX, start.y]);
-        linePoints.push([start.x + stepX, end.y]);
-        linePoints.push([end.x, end.y]);
-        // elbowPoints.push({ x: start.x + stepX, y: start.y });
-        // elbowPoints.push({ x: start.x + stepX, y: end.y });
+        linePoints.push([start[0] + stepX, start[1]]);
+        linePoints.push([start[0] + stepX, end[1]]);
+        linePoints.push(end);
       }
-      // elbowPoints.push(end);
     }
-
-    // console.log('linePoints a', JSON.parse(JSON.stringify(linePoints)))
 
     //remove redundant points (where three points are in a straight line)
     for (i = 1; i < linePoints.length - 1; i++) {
-      // if (i == linePoints.length - 1)
-      //   elbowPoints.push({ x: linePoints[i][0], y: linePoints[i][1] });
-      // else {
       start = linePoints[i - 1];
       mid = linePoints[i];
       end = linePoints[i + 1];
@@ -91,7 +54,7 @@ export function visiojs_router(
         //remove the middle point
         linePoints.splice(i, 1);
         i--;
-      } else elbowPoints.push({ x: linePoints[i][0], y: linePoints[i][1] });
+      } else elbowPoints.push([linePoints[i][0], linePoints[i][1]]);
       // }
     }
     // console.log('linePoints', linePoints)
@@ -102,7 +65,7 @@ export function visiojs_router(
   }
 
   //draw the elbow boxes
-  wireGroup.selectAll(".elbow").remove();
+  wireGroup.selectAll(".visiojs_elbow").remove();
   // console.log(elbowPoints.length, "96")
   if (showElbows) {
     for (var e = 0; e < elbowPoints.length; e++) {
@@ -112,15 +75,12 @@ export function visiojs_router(
       // console.log("rect ", i)
       const elbow = wireGroup
         .append("rect")
-        .attr("class", "elbow")
-        .attr("x", start.x - elbowWidth / 2)
-        .attr("y", start.y - elbowWidth / 2)
+        .attr("class", "visiojs_elbow")
+        .attr("x", start[0] - elbowWidth / 2)
+        .attr("y", start[1] - elbowWidth / 2)
         .attr("width", elbowWidth)
         .attr("height", elbowWidth)
-        .attr("fill", "url(#elbow_fill)")
-        .attr("stroke", "rgb(160, 160, 160)")
-        .attr("stroke-width", 0.5)
-        .style("cursor", "move");
+        .attr("fill", "url(#visiojs_elbow_fill)");
       moveElbowCallback({
         elbowID,
         elbow,
@@ -131,7 +91,7 @@ export function visiojs_router(
           visiojs_router(
             pathType,
             newPoints,
-            snapToGrid,
+            snapAndClipToGrid,
             wireGroup,
             showElbows,
             moveElbowCallback,
@@ -143,27 +103,11 @@ export function visiojs_router(
   }
   // console.log("elbowPoints", elbowPoints, points);
   return elbowPoints;
-  // .attr("fill", "url(#connector_fill)")
 }
-
-//spare code below - to add bezier curves, but not needed because we found "stroke-linejoin" svg attribute
-// var yBez = bez;
-// var xBez = bez;
-// if (end.y < start.y) {
-//   yBez = -bez;
-// }
-// if (end.x < start.x) {
-//   xBez = -bez;
-// }
-
-// pathGen.lineTo(start.x + stepX - xBez, start.y);
-// pathGen.quadraticCurveTo(start.x + stepX, start.y, start.x + stepX, start.y + yBez);
-// pathGen.lineTo(start.x + stepX, end.y - yBez);
-// pathGen.quadraticCurveTo(start.x + stepX, end.y, start.x + stepX + xBez, end.y);
 
 export function userDraggingElbow({
   d3,
-  snapToGrid,
+  snapAndClipToGrid,
   elbSvg,
   wireID,
   initialState,
@@ -189,29 +133,28 @@ export function userDraggingElbow({
       [mouseStart.x, mouseStart.y] = [e.x, e.y];
     })
     .on("drag", (event) => {
+      const snapped = snapAndClipToGrid([event.x - mouseStart.x, event.y - mouseStart.y]);
       const delta = {
-        x: snapToGrid(event.x - mouseStart.x),
-        y: snapToGrid(event.y - mouseStart.y),
+        x: snapped[0],
+        y: snapped[1],
       };
       //FIXME - can use event.dx/dy?
       if (delta.x === lastDelta.x && delta.y === lastDelta.y) return; //no movement, no need to redraw
       lastDelta = { ...delta };
-      // console.log('delta old vs new', delta.x, event.dx, event.x,mouseX);
-      // console.log("old points", [...initialState.wires[wireID].points]);
       const newPoints = initialState.wires[wireID].points.map((p, i) => {
         if (i === elbowID) {
-          return { x: p.x + delta.x, y: p.y + delta.y };
+          return [p[0] + delta.x, p[1] + delta.y];
           //if the line moves in x, also move the adjacent point with the same x coordinate
         } else if (
           (i === elbowID - 1 || i === elbowID + 1) &&
-          p.x === initialState.wires[wireID].points[elbowID].x
+          p[0] === initialState.wires[wireID].points[elbowID][0]
         ) {
-          return { x: p.x + delta.x, y: p.y };
+          return [p[0] + delta.x, p[1]];
         } else if (
           (i === elbowID - 1 || i === elbowID + 1) &&
-          p.y === initialState.wires[wireID].points[elbowID].y
+          p[1] === initialState.wires[wireID].points[elbowID][1]
         ) {
-          return { x: p.x, y: p.y + delta.y };
+          return [p[0], p[1] + delta.y ];
         }
 
         return p;
@@ -239,33 +182,34 @@ function constructLine(
   lineStartY,
   line,
   hoverConnector,
-  snapToGrid,
+  snapAndClipToGrid,
   zoomTform,
   initialState
 ) {
   const zz = zoomTform;
-  const start = { x: lineStartX, y: lineStartY };
-  const end = {
-    x: snapToGrid((mouseX - zz.x) / zz.k),
-    y: snapToGrid((mouseY - zz.y) / zz.k),
-  };
-  var pointsStartEnd = [start, end];
-  var pointsAll = pointsStartEnd.slice(0, 1).concat(wireMidPoints, pointsStartEnd.slice(1)); //simply puts midpoints in the middle, doesn't mess up if midpoints is empty
+  const start = [lineStartX, lineStartY];
+  const end = snapAndClipToGrid([(mouseX - zz.x) / zz.k, (mouseY - zz.y) / zz.k])
+  // const end = {
+  //   x: snapped[0],
+  //   y: snapped[1],
+  // };
+  // var pointsStartEnd = [start, end];
+  var pointsAll = [start, ...wireMidPoints, end]; //;pointsStartEnd.slice(0, 1).concat(wireMidPoints, pointsStartEnd.slice(1)); //simply puts midpoints in the middle, doesn't mess up if midpoints is empty
 
   //when building a wire
   // console.log("bp c")
   visiojs_router(
     "manhattan",
     pointsAll,
-    snapToGrid,
+    snapAndClipToGrid,
     lineGroup,
     null,
     (o) => moveElbow(o),
     initialState.wires.length
   );
 
-  const endCircle = d3.select("#tempconn");
-  endCircle.attr("cx", end.x).attr("cy", end.y).style("visibility", "visible");
+  const endCircle = d3.select("#visiojs_tempconn");
+  endCircle.attr("cx", end[0]).attr("cy", end[1]).style("visibility", "visible");
 
   if (hoverConnector.shapeID != null) {
     line.classed("visiojs_good_wire", true);
@@ -289,7 +233,7 @@ export const constructWire = ({
   wireMidPoints = [],
   lineGroup = null,
   line = null,
-  snapToGrid,
+  snapAndClipToGrid,
   wireStart,
   svg,
   initialState,
@@ -301,28 +245,26 @@ export const constructWire = ({
   var [lineStartX, lineStartY] = getGroupTranslate(group);
   const rotation = getGroupRotation(group);
   const [rotatedX, rotatedY] = rotatePoints(x, y, rotation);
-  lineStartX = snapToGrid(lineStartX + rotatedX);
-  lineStartY = snapToGrid(lineStartY + rotatedY);
+  [lineStartX, lineStartY] = snapAndClipToGrid([lineStartX + rotatedX, lineStartY + rotatedY]);
   wireStart.shapeID = shapeID;
   wireStart.connectorID = connectorID;
   const hoverConnectorNew = { shapeID: null, connectorID: null }; // -1 is a sentinel value to indicate no hover
 
   // Add line
-  const g_wires = d3.select("#wires");
+  const g_wires = d3.select("#visiojs_wires");
 
-  if (lineGroup === null) lineGroup = g_wires.insert("g").style("cursor", "pointer"); //FIXME - don't pass linegroup as argument?
+  if (lineGroup === null) lineGroup = g_wires.insert("g"); //FIXME - don't pass linegroup as argument?
   if (line === null) line = lineGroup.append("path").attr("class", "visiojs_wire");
-  var newCircle = d3.select("#tempconn");
+  var newCircle = d3.select("#visiojs_tempconn");
   if (newCircle.empty()) {
     newCircle = lineGroup
       .append("circle")
       .attr("r", 10)
       .attr("cx", 0)
       .attr("cy", 0)
-      .attr("fill", "url(#connector_fill)")
-      .attr("stroke", "#1b1b1b")
-      .attr("class", "connector")
-      .attr("id", "tempconn")
+      .attr("fill", "url(#visiojs_connector_fill)")
+      .attr("class", "visiojs_connector")
+      .attr("id", "visiojs_tempconn")
       .style("visibility", "hidden");
   }
 
@@ -331,11 +273,10 @@ export const constructWire = ({
 
   function checkHover(x, y) {
     const el = document.elementFromPoint(x, y);
-    if (el && el.classList.contains("connector") && el.id != "tempconn") {
+    if (el && el.classList.contains("visiojs_connector") && el.id != "visiojs_tempconn") {
       const match = el.id.split("_");
-      hoverConnectorNew.shapeID = match[1];
-      hoverConnectorNew.connectorID = match[2];
-      // console.log("hoverConnectorNew:", hoverConnectorNew);
+      hoverConnectorNew.shapeID = Number(match[1]);
+      hoverConnectorNew.connectorID = Number(match[2]);
     } else {
       hoverConnectorNew.shapeID = null;
       hoverConnectorNew.connectorID = null;
@@ -344,7 +285,7 @@ export const constructWire = ({
 
   svg.on("touchmove.drawline", function (event) {
     const touch = event.touches[0]; // Get the first touch point
-    checkHover(touch.pageX, touch.pageY);
+    checkHover(touch.clientX, touch.clientY);
     // }
     event.preventDefault(); // Optional: prevents scrolling
     const [mouseX, mouseY] = d3.pointer(touch, svg.node());
@@ -357,7 +298,7 @@ export const constructWire = ({
       lineStartY,
       line,
       hoverConnectorNew,
-      snapToGrid,
+      snapAndClipToGrid,
       d3.zoomTransform(svg.node()),
       initialState
     );
@@ -365,7 +306,7 @@ export const constructWire = ({
 
   // Mouse move handler to update line
   svg.on("mousemove.drawline", function (event) {
-    checkHover(event.pageX, event.pageY);
+    checkHover(event.clientX, event.clientY);
     const [mouseX, mouseY] = d3.pointer(event, svg.node());
     constructLine(
       mouseX,
@@ -376,7 +317,7 @@ export const constructWire = ({
       lineStartY,
       line,
       hoverConnectorNew,
-      snapToGrid,
+      snapAndClipToGrid,
       d3.zoomTransform(svg.node()),
       initialState
     );
@@ -395,11 +336,6 @@ export const constructWire = ({
     endLine(e, wireMidPoints, lineGroup, hoverConnectorNew);
   });
   svg.on("click.endline", (e) => {
-    const [mouseX, mouseY] = d3.pointer(e, svg.node());
-    const zz = d3.zoomTransform(svg.node());
-    var lineEnd = {}; // FIXME - simplify out this var?
-    lineEnd.x = snapToGrid((mouseX - zz.x) / zz.k);
-    lineEnd.y = snapToGrid((mouseY - zz.y) / zz.k);
     if (
       hoverConnectorNew.shapeID != null &&
       !(hoverConnectorNew.connectorID == connectorID && hoverConnectorNew.shapeID == shapeID)
@@ -408,25 +344,29 @@ export const constructWire = ({
       endLine(e, wireMidPoints, lineGroup, hoverConnectorNew);
       stateChanged(initialState);
     } else {
-      wireMidPoints.push({ ...lineEnd });
+      const [mouseX, mouseY] = d3.pointer(e, svg.node());
+      const zz = d3.zoomTransform(svg.node());
+      const snapped = snapAndClipToGrid([(mouseX - zz.x) / zz.k, (mouseY - zz.y) / zz.k]);
+
+      wireMidPoints.push(snapped);
       // console.log("add a point", wireMidPoints);
     }
   });
   svg.on("touchend.endline", (e) => {
     const touch = e.changedTouches[0]; // Get the first touch point
     console.log("touch endline");
-    const [mouseX, mouseY] = d3.pointer(touch, svg.node());
-    const zz = d3.zoomTransform(svg.node());
-    var lineEnd = {}; // FIXME - simplify out this var?
-    lineEnd.x = snapToGrid((mouseX - zz.x) / zz.k);
-    lineEnd.y = snapToGrid((mouseY - zz.y) / zz.k);
+    // var lineEnd = {}; // FIXME - simplify out this var?
+    // [lineEnd.x, lineEnd.y] = snapAndClipToGrid([(mouseX - zz.x) / zz.k,(mouseY - zz.y) / zz.k]);
 
     if (hoverConnectorNew.shapeID != null) {
       console.log("single click + hover");
       endLine(e, wireMidPoints, lineGroup, hoverConnectorNew);
       stateChanged(initialState);
     } else {
-      wireMidPoints.push({ ...lineEnd });
+          const [mouseX, mouseY] = d3.pointer(touch, svg.node());
+    const zz = d3.zoomTransform(svg.node());
+
+      wireMidPoints.push(snapAndClipToGrid([(mouseX - zz.x) / zz.k,(mouseY - zz.y) / zz.k]));
       console.log("add a point", wireMidPoints);
 
       newCircle.on("touchstart", function (e) {
@@ -442,7 +382,7 @@ export const constructWire = ({
           wireMidPoints,
           lineGroup,
           line,
-          snapToGrid,
+          snapAndClipToGrid,
           wireStart,
           svg,
           initialState,

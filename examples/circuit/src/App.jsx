@@ -3,35 +3,36 @@ import { visiojs } from "visiojs";
 import "./App.css";
 import { initialState } from "./initialState.js";
 
-var vjs;
+// var vjs; //FIXME - vjs should be a state variable?
 function App() {
   const initializedRef = useRef(false);
   const [history, setHistory] = useState({ pointer: 0, state: [] });
+  const [vjs, setVjs] = useState(null);
 
   const numUndos = 15;
 
   const addShapes = {
     opAmp: {
-      shape: "opAmp.svg",
+      image: "opAmp.svg",
       connectors: [
-        { x: 0, y: 64 },
-        { x: 0, y: 128 },
-        { x: 128, y: 96 },
+        [0, 64],
+        [0, 128],
+        [128, 96],
       ],
       x: 0,
       y: 0,
     },
     vIn: {
-      shape: "vIn.svg",
-      connectors: [{ x: 64, y: 0 }],
+      image: "vIn.svg",
+      connectors: [[64, 0]],
       x: 0,
       y: 0,
     },
     resistor: {
-      shape: "resistor.svg",
+      image: "resistor.svg",
       connectors: [
-        { x: 16, y: 48 },
-        { x: 112, y: 48 },
+        [16, 48],
+        [112, 48],
       ],
       x: 0,
       y: 0,
@@ -43,14 +44,15 @@ function App() {
       },
     },
     capacitor: {
-      shape: "capacitor.svg",
+      image: "capacitor.svg",
       connectors: [
-        { x: 48, y: 32 },
-        { x: 48, y: 112 },
+        [0, -32],
+        [0, 48],
       ],
       x: 0,
       y: 0,
-            label: {
+      offset:[-48,-64],
+      label: {
         text: "C1",
         class: "circuit_label",
         x: 48,
@@ -58,14 +60,14 @@ function App() {
       },
     },
     inductor: {
-      shape: "inductor.svg",
+      image: "inductor.svg",
       connectors: [
-        { x: 16, y: 64 },
-        { x: 144, y: 64 },
+        [16, 64],
+        [144, 64],
       ],
       x: 0,
       y: 0,
-            label: {
+      label: {
         text: "L1",
         class: "circuit_label",
         x: 80,
@@ -73,22 +75,23 @@ function App() {
       },
     },
     gnd: {
-      shape: "gnd.svg",
-      connectors: [{ x: 64, y: 16 }],
+      image: "gnd.svg",
+      connectors: [[64, 16]],
       x: 0,
       y: 0,
     },
     vout: {
-      shape: "vout.svg",
-      connectors: [{ x: 16, y: 64 }],
+      image: "vout.svg",
+      connectors: [[16, 64]],
       x: 0,
       y: 0,
     },
   };
 
-  const trackHistory = (x) => {
+  const trackHistory = (newState) => {
+    // console.log("state changed", newState);
     setHistory((old_h) => {
-      const deepCopyState = JSON.parse(JSON.stringify(x));
+      const deepCopyState = JSON.parse(JSON.stringify(newState));
       const h = { ...old_h };
       //there was an undo, then a new state was created. Throwing away the future history
       if (h.pointer < h.state.length - 1) h.state = h.state.slice(0, h.pointer + 1);
@@ -121,15 +124,16 @@ function App() {
   }
 
   useEffect(() => {
-    //in react safe-mode this is executed twice which really breaks d3 event listeners & drag behavior. Using a ref to prevent double-initialization
-    if (initializedRef.current) return;
-    initializedRef.current = true;
-    vjs = visiojs({
+    var newVjs = visiojs({
       initialState: initialState,
       stateChanged: trackHistory,
     });
-    vjs.init();
-  });
+    setVjs(newVjs);
+  }, []);
+
+  useEffect(() => {
+    if (vjs) vjs.init();
+  }, [vjs]);
 
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
@@ -151,39 +155,13 @@ function App() {
             </button>
           );
         })}
-
-        {/* <button
-        style={{ display: "inline-block", cursor: "grab", marginRight: "10px" }}
-        draggable="true"
-        onDragStart={(e) => {
-          window.dragData = opAmp;
-          e.dataTransfer.setData("application/json", JSON.stringify(opAmp));
-        }}
-        onClick={()=>vjs.addShape(opAmp)}
-      >
-        Op-Amp
-      </button> */}
-        <button
-          style={{ display: "inline-block", marginRight: "10px" }}
-          id="delete"
-          onClick={() => vjs.deleteSelected()}
-        >
+        <button style={{ display: "inline-block", marginRight: "10px" }} id="delete" onClick={() => vjs.deleteSelected()}>
           Delete
         </button>
-        <button
-          style={{ display: "inline-block", marginRight: "10px" }}
-          id="undo"
-          disabled={history.pointer == 0}
-          onClick={() => undo()}
-        >
+        <button style={{ display: "inline-block", marginRight: "10px" }} id="undo" disabled={history.pointer == 0} onClick={() => undo()}>
           Undo
         </button>
-        <button
-          style={{ display: "inline-block" }}
-          id="redo"
-          disabled={history.pointer >= history.state.length - 1}
-          onClick={() => redo()}
-        >
+        <button style={{ display: "inline-block" }} id="redo" disabled={history.pointer >= history.state.length - 1} onClick={() => redo()}>
           Redo
         </button>
 

@@ -1,18 +1,15 @@
 ## Critical to-do's
-60 - move all stying to css, so it can be overridden by user, and declutter the code
-62 - split the code into multiple files!! like draw wire
-63 - sometimes the svg labels are getting highlighted
-65 - eliminate the dev example project
-66 - create function to create gzipped url param
-
+102 - Export gzip'd state
+67 - Push to npm
+68 - create examples with react + npm, and with vanilla js and no npm
 
 ## ToDO
 33 - Create an example with 100x100 boxes (10k components)
 37 - Use x and y in shape to translate to 0,0. In case user has an SVG with 500px of offset or something
 38 - Fix this issue where SVG isn't filling the full width in circuit solver
-41 - add a dx and dy so when you drop objects it's centered on your mouse
 -- can use this to propery rotate around its center?
 44 - test with jpg import instead of svg
+66 - create function to create gzipped url param
 
 
 ## Lower priority
@@ -24,6 +21,7 @@
 34 - create jsdoc documentation
 45 - should mouseout be swapped with mouseleave? mouse can move too fast to trigger mouseout
 43 - click within bounding box, not on the path -- we'll see how the circuit drawer turns out
+76 - If wire is short (100px?) then don't add a kink
 
 
 ## Done
@@ -111,6 +109,32 @@ line between snowman connectors have an elbow?
 -- Add shape labels, check it's OK with rotate, then I think we're ready!
 61 - change css classes to start with visiojs
 64 - eliminate svgref?
+63 - sometimes the svg labels are getting highlighted
+65 - eliminate the dev example project
+79 - allow click elbow thru a shape
+60 - move all stying to css, so it can be overridden by user, and declutter the code
+62 - split the code into multiple files!! like draw wire
+69 - change   const url = data.shape; to   const url = data.image;
+70 - make the background white - overridable with settings
+71 - name variables better in circut app (not "x")
+72 - undo after rotate redraws the wire? I think draw wire got to go in drawshape (was thinking earlier but didn't do it yet)
+73 - create a clean-state function which removes all the null entries (and updates wires etc)
+-- I don't like changing the ID's. How about filling the null's with the next add? yes.
+74 - make sure these fields in wires are integers
+    //   "start": { "shapeID": 0, "connectorID": 0 },
+    //   "end": { "shapeID": 1, "connectorID": 0 },
+41 - add a dx and dy so when you drop objects it's centered on your mouse (also so it rotates around the mouse)
+75 - show point 0,0 if in debug mode, helps to center the svg
+--  add a 'fixed' attribute to shapes so user cannot move it (instead of debug mode)
+80 - create deletable field - some things are not deletable
+77 - prevent dragging off the edge of canvas
+100 - make wire points to [], not {x,y}
+81 - add a toggle zoom enable
+82 - id's to include visiojs to prevent future clashes
+
+
+
+
 
 ## Decided not to do
 -- becaue you can either mousedown and drag, or click and then click again. I think 2x click is easier
