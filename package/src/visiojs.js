@@ -118,10 +118,11 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
     const zoomButton = d3.select("#visiojs_toggle_button").empty()
       ? svg
           .append("foreignObject")
-          .attr("x", domWidth - zoomButtonWidth - 5)
+          // .attr("x", domWidth - zoomButtonWidth - 5)
           .attr("y", 5)
           .attr("width", zoomButtonWidth)
           .attr("height", 50)
+          .attr("id", "visiojs_toggle_button_foreign")
           .append("xhtml:body")
           .style("margin", "0px") // remove default body margin
           .style("background", "transparent") // remove default body margin
@@ -129,6 +130,9 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
           .attr("id", "visiojs_toggle_button")
           .text("Enable Zoom")
       : d3.select("#visiojs_toggle_button");
+
+    // console.log("domWidth", domWidth, "domHeight", domHeight);
+    d3.select("#visiojs_toggle_button_foreign").attr("x", boundingRect.width - zoomButtonWidth - 3);
 
     zoomButton.on("click", function () {
       if (zoomEnabled) {
@@ -146,11 +150,15 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
     });
   }
 
-  function snapAndClipToGrid(value) {
-    return [
-      Math.min(Math.max(Math.round(value[0] / spacing) * spacing, -settings.width / 2), settings.width / 2),
-      Math.min(Math.max(Math.round(value[1] / spacing) * spacing, -settings.height / 2), settings.height / 2),
-    ];
+  function snapAndClipToGrid(value, clip = true) {
+    if (clip) {
+      return [
+        Math.min(Math.max(Math.round(value[0] / spacing) * spacing, -settings.width / 2), settings.width / 2),
+        Math.min(Math.max(Math.round(value[1] / spacing) * spacing, -settings.height / 2), settings.height / 2),
+      ];
+    } else {
+      return [Math.round(value[0] / spacing) * spacing, Math.round(value[1] / spacing) * spacing];
+    }
   }
 
   function deselectAll() {
@@ -311,23 +319,6 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
       .attr("x2", (d) => d.x2)
       .attr("y2", (d) => d.y2);
   }
-
-  const zoomHandler = (width, height, domWidth, domHeight) => {
-    const minZoom = Math.min(domWidth / width, domHeight / height);
-    const zoom = d3
-      .zoom()
-      .scaleExtent([minZoom, settings.maxZoom])
-      .clickDistance(10) // Prevents click suppression on touch devices
-      .translateExtent([
-        [-width / 2, -height / 2],
-        [width / 2, height / 2],
-      ])
-      .on("zoom", (event) => g_wholeThing.attr("transform", event.transform));
-
-    svg.call(zoom).on("dblclick.zoom", null);
-
-    return zoom;
-  };
 
   function redrawWireOnShape({ shapeID, save = false, origXY = [], delta = {} }) {
     for (const w in initialState.wires) {

@@ -82,14 +82,15 @@ export async function drawShape({ id, data, selectIt = false, selected, wireStar
   // console.log('drawing shape', divId, d3.select(divId).empty())
   if (shape.empty()) {
     shape = g.append("g").attr("id", divId);
+    const imageGroup = shape.append("g");
     var img;
     if (url.endsWith(".svg")) {
       const data = await d3.xml(url);
       const importedSvg = data.documentElement;
-      shape.node().appendChild(importedSvg);
+      imageGroup.node().appendChild(importedSvg);
       img = d3.select(importedSvg);
-      img.attr("transform", `translate(${offset[0]}, ${offset[1]})`);
-    } else img = shape.append("image").attr("href", url);
+    } else img = imageGroup.append("image").attr("href", url);
+    imageGroup.attr("transform", `translate(${offset[0]}, ${offset[1]})`);
 
     //add a clickable backround
 
@@ -105,7 +106,7 @@ export async function drawShape({ id, data, selectIt = false, selected, wireStar
         .attr("x", label.x)
         .attr("y", label.y)
         .text(label.text)
-        .attr("class", label.class);
+        .attr("class", `visiojs_label ${label.class}`);
     }
 
     for (let conn = 0; conn < connectors.length; conn++) {

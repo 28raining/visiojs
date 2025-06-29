@@ -173,6 +173,18 @@ export function userDraggingElbow({
   elbSvg.call(drag);
 }
 
+  function checkHover(x, y, hoverConnectorNew) {
+    const el = document.elementFromPoint(x, y);
+    if (el && el.classList.contains("visiojs_connector") && el.id != "visiojs_tempconn") {
+      const match = el.id.split("_");
+      hoverConnectorNew.shapeID = Number(match[1]);
+      hoverConnectorNew.connectorID = Number(match[2]);
+    } else {
+      hoverConnectorNew.shapeID = null;
+      hoverConnectorNew.connectorID = null;
+    }
+  }
+
 function constructLine(
   mouseX,
   mouseY,
@@ -210,6 +222,13 @@ function constructLine(
 
   const endCircle = d3.select("#visiojs_tempconn");
   endCircle.attr("cx", end[0]).attr("cy", end[1]).style("visibility", "visible");
+
+  //check it tempconn is over a connector
+  const rect = endCircle.node().getBoundingClientRect();
+  const centerX = rect.left + 5;
+  const centerY = rect.top + 5;
+
+  checkHover(centerX, centerY, hoverConnector);
 
   if (hoverConnector.shapeID != null) {
     line.classed("visiojs_good_wire", true);
@@ -271,21 +290,9 @@ export const constructWire = ({
   line.attr("stroke-dasharray", "5,5");
   line.classed("visiojs_bad_wire", true);
 
-  function checkHover(x, y) {
-    const el = document.elementFromPoint(x, y);
-    if (el && el.classList.contains("visiojs_connector") && el.id != "visiojs_tempconn") {
-      const match = el.id.split("_");
-      hoverConnectorNew.shapeID = Number(match[1]);
-      hoverConnectorNew.connectorID = Number(match[2]);
-    } else {
-      hoverConnectorNew.shapeID = null;
-      hoverConnectorNew.connectorID = null;
-    }
-  }
-
   svg.on("touchmove.drawline", function (event) {
     const touch = event.touches[0]; // Get the first touch point
-    checkHover(touch.clientX, touch.clientY);
+    // checkHover(touch.clientX, touch.clientY);
     // }
     event.preventDefault(); // Optional: prevents scrolling
     const [mouseX, mouseY] = d3.pointer(touch, svg.node());
@@ -306,7 +313,7 @@ export const constructWire = ({
 
   // Mouse move handler to update line
   svg.on("mousemove.drawline", function (event) {
-    checkHover(event.clientX, event.clientY);
+    // checkHover(event.clientX, event.clientY);
     const [mouseX, mouseY] = d3.pointer(event, svg.node());
     constructLine(
       mouseX,

@@ -1,4 +1,6 @@
 ## Critical to-do's
+200 - if using svg viewbox can you set the size? and jpeg
+13 - remove pako from visiojs - it's too big!
 102 - Export gzip'd state
 67 - Push to npm
 68 - create examples with react + npm, and with vanilla js and no npm
@@ -131,9 +133,10 @@ line between snowman connectors have an elbow?
 100 - make wire points to [], not {x,y}
 81 - add a toggle zoom enable
 82 - id's to include visiojs to prevent future clashes
-
-
-
+103 - move enable zoom button on resize
+104 - prevent highlghting of labels
+14 - offset must move to a group above the svg, otherwise its buggy
+201 - wire is connected when it's snapped to connector, not when users finger is over it
 
 
 ## Decided not to do
