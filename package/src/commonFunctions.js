@@ -5,8 +5,7 @@ export function getGroupTranslate(selection) {
 }
 
 //function to get the rotation amount from the transform attribute
-export function getGroupRotation(selection) {
-  const transform = selection.attr("transform");
+export function getGroupRotation(transform) {
   const match = transform && transform.match(/rotate\(([^)]+)\)/);
   return match ? parseFloat(match[1]) : 0;
 }
@@ -24,11 +23,11 @@ export function getConnectorLocation(shapeDom, shapeID, connectorID, initialStat
   const [gStartX, gStartY] = [initialState["shapes"][shapeID].x, initialState["shapes"][shapeID].y];
   var connStartX = initialState["shapes"][shapeID].connectors[connectorID][0];
   var connStartY = initialState["shapes"][shapeID].connectors[connectorID][1];
-
-  const rotationStart = getGroupRotation(shapeDom);
-  [connStartX, connStartY] = rotatePoints(connStartX, connStartY, rotationStart);
-
-  return snapAndClipToGrid([gStartX + connStartX, gStartY + connStartY]);
+  const transform = shapeDom.attr("transform");
+  const rotationStart = transform ? getGroupRotation(transform) : (initialState["shapes"][shapeID].rotation != undefined ? initialState["shapes"][shapeID].rotation : 0); //if no transform, get rotation from state. Maybe always get rotation from state? this was a patch fix, didn't investigate if it could be permanent
+  // console.log('shapeDom', rotationStart, shapeDom.attr("transform"))
+  const [rotX, rotY] = rotatePoints(connStartX, connStartY, rotationStart);
+  return snapAndClipToGrid([gStartX + rotX, gStartY + rotY]);
   // return { x: snapped[0], y: snapped[1] };
 }
 

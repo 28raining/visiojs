@@ -1,8 +1,7 @@
 import * as d3 from "d3";
-import * as pako from "pako";
 import { visiojs_router, userDraggingElbow } from "./router.js";
 import { drawShape } from "./drawShape.js";
-import { getConnectorLocation, defaultSettings, setDefaults } from "./commonFunctions.js";
+import { getConnectorLocation, setDefaults } from "./commonFunctions.js";
 // var equal = require('fast-deep-equal');
 import equal from "fast-deep-equal";
 import "./visiojs.css";
@@ -110,7 +109,7 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
 
     //Start reading from the json state
     drawFromJson(g_wholeThing, svg);
-    if (enableUndo) stateChanged(initialState); //to prevent creating new states on window resize
+    if (enableUndo) stateChanged(initialState); //check enableUndo to prevent creating new states on window resize
 
     const zoomButtonWidth = 100;
     //create toggle zoom button
@@ -174,7 +173,7 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
 
     selected.length = 0;
     //re-enable clicks on the shapes
-    d3.select(`#visiojs_shapes`).style("pointer-events", "auto").style("opacity", "1.0");
+    d3.select("#visiojs_shapes").style("pointer-events", "auto").style("opacity", "1.0");
   }
 
   function drawWire(id) {
@@ -225,7 +224,7 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
       var connector2 = g_wholeThing.select(`#connector_${wire.end.shapeID}_${wire.end.connectorID}`);
 
       console.log("removing pointer events from shapes");
-      d3.select(`#visiojs_shapes`).style("pointer-events", "none").style("opacity", "0.9");
+      d3.select("#visiojs_shapes").style("pointer-events", "none").style("opacity", "0.9");
 
       //call this to add the elbows to the wire
       const allPoints2 = [startConnector, ...wire.points, endConnector];
@@ -254,7 +253,7 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
         //if selected contains no ids containing "wire" then re-enable clicks on the shapes
         if (selected.filter((s) => s.startsWith("wire")).length == 0) {
           console.log("re-enabling pointer events on shapes");
-          d3.select(`#visiojs_shapes`).style("pointer-events", "auto").style("opacity", "1.0");
+          d3.select("#visiojs_shapes").style("pointer-events", "auto").style("opacity", "1.0");
         }
         // g_wholeThing.selectAll(".visiojs_selected_connector").classed("visiojs_selected_connector", false);
       }
@@ -485,31 +484,10 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
     } else console.log("it's all the same");
   }
 
-  function stateToURLParam() {
-    const jsonString = JSON.stringify(initialState);
-    const compressed = pako.deflate(jsonString, { to: "string" });
-    // Encode the compressed data to make it URL-safe
-    const encodedCompressed = encodeURIComponent(btoa(String.fromCharCode(...compressed)));
-    return encodedCompressed;
-  }
-
-  function URLToState(urlParameter) {
-    try {
-      const compressedBinary = Uint8Array.from(atob(decodeURIComponent(urlParameter)), (char) => char.charCodeAt(0));
-      const decompressed = pako.inflate(compressedBinary, { to: "string" }); // Decompress the data using pako
-      const decodedObject = JSON.parse(decompressed); // Parse the decompressed JSON string into an object
-      initialState = setDefaults(decodedObject);
-    } catch (e) {
-      console.error("Error decoding URL state:", e);
-    }
-  }
-
   return {
     addShape,
     deleteSelected,
     redraw,
-    stateToURLParam,
-    URLToState,
     init,
   };
 };

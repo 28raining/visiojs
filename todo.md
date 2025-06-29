@@ -1,7 +1,6 @@
 ## Critical to-do's
 200 - if using svg viewbox can you set the size? and jpeg
-13 - remove pako from visiojs - it's too big!
-102 - Export gzip'd state
+11 - deleting shape and wire connecting 2 different shapes doesn't bring back the wire on undo
 67 - Push to npm
 68 - create examples with react + npm, and with vanilla js and no npm
 
@@ -137,7 +136,7 @@ line between snowman connectors have an elbow?
 104 - prevent highlghting of labels
 14 - offset must move to a group above the svg, otherwise its buggy
 201 - wire is connected when it's snapped to connector, not when users finger is over it
-
+202 - loading state with rotated shape
 
 ## Decided not to do
 -- becaue you can either mousedown and drag, or click and then click again. I think 2x click is easier

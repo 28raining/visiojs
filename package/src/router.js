@@ -1,14 +1,6 @@
 import * as d3 from "d3";
 import { getGroupTranslate, getGroupRotation, rotatePoints } from "./commonFunctions.js";
-export function visiojs_router(
-  pathType,
-  points,
-  snapAndClipToGrid,
-  wireGroup,
-  showElbows,
-  moveElbowCallback,
-  wireID
-) {
+export function visiojs_router(pathType, points, snapAndClipToGrid, wireGroup, showElbows, moveElbowCallback, wireID) {
   // console.log("points", points, "wireID", wireID);
   var i;
   var elbowWidth = 10;
@@ -87,16 +79,7 @@ export function visiojs_router(
         wireID,
         start: points[0],
         end: points[points.length - 1],
-        redrawWire: (newPoints) =>
-          visiojs_router(
-            pathType,
-            newPoints,
-            snapAndClipToGrid,
-            wireGroup,
-            showElbows,
-            moveElbowCallback,
-            wireID
-          ),
+        redrawWire: (newPoints) => visiojs_router(pathType, newPoints, snapAndClipToGrid, wireGroup, showElbows, moveElbowCallback, wireID),
       });
       // console.log('elbow set up with i', i)
     }
@@ -105,18 +88,7 @@ export function visiojs_router(
   return elbowPoints;
 }
 
-export function userDraggingElbow({
-  d3,
-  snapAndClipToGrid,
-  elbSvg,
-  wireID,
-  initialState,
-  elbowID,
-  redrawWire,
-  start,
-  end,
-  stateChanged,
-}) {
+export function userDraggingElbow({ d3, snapAndClipToGrid, elbSvg, wireID, initialState, elbowID, redrawWire, start, end, stateChanged }) {
   // To support this
   // 1 - all wire points should go into initial state - no corners should be 'assumed' after the wire is created
   // 2 - if elbow is dragged up, move this point and either adjacent point with the same y coordinate
@@ -145,16 +117,10 @@ export function userDraggingElbow({
         if (i === elbowID) {
           return [p[0] + delta.x, p[1] + delta.y];
           //if the line moves in x, also move the adjacent point with the same x coordinate
-        } else if (
-          (i === elbowID - 1 || i === elbowID + 1) &&
-          p[0] === initialState.wires[wireID].points[elbowID][0]
-        ) {
+        } else if ((i === elbowID - 1 || i === elbowID + 1) && p[0] === initialState.wires[wireID].points[elbowID][0]) {
           return [p[0] + delta.x, p[1]];
-        } else if (
-          (i === elbowID - 1 || i === elbowID + 1) &&
-          p[1] === initialState.wires[wireID].points[elbowID][1]
-        ) {
-          return [p[0], p[1] + delta.y ];
+        } else if ((i === elbowID - 1 || i === elbowID + 1) && p[1] === initialState.wires[wireID].points[elbowID][1]) {
+          return [p[0], p[1] + delta.y];
         }
 
         return p;
@@ -173,34 +139,22 @@ export function userDraggingElbow({
   elbSvg.call(drag);
 }
 
-  function checkHover(x, y, hoverConnectorNew) {
-    const el = document.elementFromPoint(x, y);
-    if (el && el.classList.contains("visiojs_connector") && el.id != "visiojs_tempconn") {
-      const match = el.id.split("_");
-      hoverConnectorNew.shapeID = Number(match[1]);
-      hoverConnectorNew.connectorID = Number(match[2]);
-    } else {
-      hoverConnectorNew.shapeID = null;
-      hoverConnectorNew.connectorID = null;
-    }
+function checkHover(x, y, hoverConnectorNew) {
+  const el = document.elementFromPoint(x, y);
+  if (el && el.classList.contains("visiojs_connector") && el.id != "visiojs_tempconn") {
+    const match = el.id.split("_");
+    hoverConnectorNew.shapeID = Number(match[1]);
+    hoverConnectorNew.connectorID = Number(match[2]);
+  } else {
+    hoverConnectorNew.shapeID = null;
+    hoverConnectorNew.connectorID = null;
   }
+}
 
-function constructLine(
-  mouseX,
-  mouseY,
-  lineGroup,
-  wireMidPoints,
-  lineStartX,
-  lineStartY,
-  line,
-  hoverConnector,
-  snapAndClipToGrid,
-  zoomTform,
-  initialState
-) {
+function constructLine(mouseX, mouseY, lineGroup, wireMidPoints, lineStartX, lineStartY, line, hoverConnector, snapAndClipToGrid, zoomTform, initialState) {
   const zz = zoomTform;
   const start = [lineStartX, lineStartY];
-  const end = snapAndClipToGrid([(mouseX - zz.x) / zz.k, (mouseY - zz.y) / zz.k])
+  const end = snapAndClipToGrid([(mouseX - zz.x) / zz.k, (mouseY - zz.y) / zz.k]);
   // const end = {
   //   x: snapped[0],
   //   y: snapped[1],
@@ -210,15 +164,7 @@ function constructLine(
 
   //when building a wire
   // console.log("bp c")
-  visiojs_router(
-    "manhattan",
-    pointsAll,
-    snapAndClipToGrid,
-    lineGroup,
-    null,
-    (o) => moveElbow(o),
-    initialState.wires.length
-  );
+  visiojs_router("manhattan", pointsAll, snapAndClipToGrid, lineGroup, null, (o) => moveElbow(o), initialState.wires.length);
 
   const endCircle = d3.select("#visiojs_tempconn");
   endCircle.attr("cx", end[0]).attr("cy", end[1]).style("visibility", "visible");
@@ -262,7 +208,7 @@ export const constructWire = ({
   prevEvent.preventDefault(); //prevents highlighting of the text during the drag
 
   var [lineStartX, lineStartY] = getGroupTranslate(group);
-  const rotation = getGroupRotation(group);
+  const rotation = getGroupRotation(group.attr("transform"));
   const [rotatedX, rotatedY] = rotatePoints(x, y, rotation);
   [lineStartX, lineStartY] = snapAndClipToGrid([lineStartX + rotatedX, lineStartY + rotatedY]);
   wireStart.shapeID = shapeID;
@@ -343,10 +289,7 @@ export const constructWire = ({
     endLine(e, wireMidPoints, lineGroup, hoverConnectorNew);
   });
   svg.on("click.endline", (e) => {
-    if (
-      hoverConnectorNew.shapeID != null &&
-      !(hoverConnectorNew.connectorID == connectorID && hoverConnectorNew.shapeID == shapeID)
-    ) {
+    if (hoverConnectorNew.shapeID != null && !(hoverConnectorNew.connectorID == connectorID && hoverConnectorNew.shapeID == shapeID)) {
       // console.log("single click + hover");
       endLine(e, wireMidPoints, lineGroup, hoverConnectorNew);
       stateChanged(initialState);
@@ -370,10 +313,10 @@ export const constructWire = ({
       endLine(e, wireMidPoints, lineGroup, hoverConnectorNew);
       stateChanged(initialState);
     } else {
-          const [mouseX, mouseY] = d3.pointer(touch, svg.node());
-    const zz = d3.zoomTransform(svg.node());
+      const [mouseX, mouseY] = d3.pointer(touch, svg.node());
+      const zz = d3.zoomTransform(svg.node());
 
-      wireMidPoints.push(snapAndClipToGrid([(mouseX - zz.x) / zz.k,(mouseY - zz.y) / zz.k]));
+      wireMidPoints.push(snapAndClipToGrid([(mouseX - zz.x) / zz.k, (mouseY - zz.y) / zz.k]));
       console.log("add a point", wireMidPoints);
 
       newCircle.on("touchstart", function (e) {

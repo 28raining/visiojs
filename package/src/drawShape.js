@@ -43,7 +43,7 @@ const dragGenerator = (dragDatabase, snapAndClipToGrid, initialState, redrawWire
           x: newX - initialState.shapes[dragDatabase.shapeID].x,
           y: newY - initialState.shapes[dragDatabase.shapeID].y,
         };
-        const rotation = getGroupRotation(dragDatabase.shapeDom);
+        const rotation = getGroupRotation(dragDatabase.shapeDom.attr("transform"));
         dragDatabase.shapeDom.attr("transform", `translate(${newX}, ${newY}) rotate(${rotation})`);
         const origXY = [];
         for (const c in initialState.shapes[dragDatabase.shapeID].connectors) {
@@ -58,7 +58,18 @@ const dragGenerator = (dragDatabase, snapAndClipToGrid, initialState, redrawWire
 };
 // let dragHandler = dragGenerator(dragDatabase);
 
-export async function drawShape({ id, data, selectIt = false, selected, wireStart, snapAndClipToGrid, initialState, redrawWireOnShape, stateChanged, drawWire }) {
+export async function drawShape({
+  id,
+  data,
+  selectIt = false,
+  selected,
+  wireStart,
+  snapAndClipToGrid,
+  initialState,
+  redrawWireOnShape,
+  stateChanged,
+  drawWire,
+}) {
   const divId = `shape_${id}`;
   const g = d3.select("#visiojs_shapes");
   var shape = d3.select(`#${divId}`);
@@ -205,7 +216,7 @@ function addHoverRect(shape, shapeID, offset, initialState, redrawWireOnShape, i
   // });
   rotateButton.on("click", function (e) {
     e.stopPropagation();
-    const rotation = getGroupRotation(shape);
+    const rotation = getGroupRotation(shape.attr("transform"));
     const [x, y] = getGroupTranslate(shape); //is this the same as bbox.x?
 
     const newRotation = (rotation + 90) % 360;
@@ -248,7 +259,7 @@ const connector = ({ x, y, group, shapeID, connectorID, wireStart, snapAndClipTo
         start: { ...wireStart },
         end: { ...hoverConnector },
         points: wireMidPoints,
-      }
+      };
       var index = initialState["wires"].indexOf(null);
       if (index == -1) {
         index = initialState["wires"].length; //if no null entry, then add to the end

@@ -11,7 +11,8 @@
     ".": {
       "import": "./dist/visiojs.js",
       "require": "./dist/visiojs.umd.cjs"
-    }
+    },
+    "./dist/visiojs.css": "./dist/visiojs.css"
   },
   "scripts": {
     "dev": "vite",
@@ -25,7 +26,6 @@
     "vite": "^6.3.5"
   },
   "dependencies": {
-    "d3": "^7.9.0",
-    "pako": "^2.1.0"
+    "d3": "^7.9.0"
   }
 }
