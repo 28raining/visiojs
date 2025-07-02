@@ -24,13 +24,12 @@ export function getConnectorLocation(shapeDom, shapeID, connectorID, initialStat
   var connStartX = initialState["shapes"][shapeID].connectors[connectorID][0];
   var connStartY = initialState["shapes"][shapeID].connectors[connectorID][1];
   const transform = shapeDom.attr("transform");
-  const rotationStart = transform ? getGroupRotation(transform) : (initialState["shapes"][shapeID].rotation != undefined ? initialState["shapes"][shapeID].rotation : 0); //if no transform, get rotation from state. Maybe always get rotation from state? this was a patch fix, didn't investigate if it could be permanent
+  const rotationStart = transform ? getGroupRotation(transform) : initialState["shapes"][shapeID].rotation != undefined ? initialState["shapes"][shapeID].rotation : 0; //if no transform, get rotation from state. Maybe always get rotation from state? this was a patch fix, didn't investigate if it could be permanent
   // console.log('shapeDom', rotationStart, shapeDom.attr("transform"))
   const [rotX, rotY] = rotatePoints(connStartX, connStartY, rotationStart);
   return snapAndClipToGrid([gStartX + rotX, gStartY + rotY]);
   // return { x: snapped[0], y: snapped[1] };
 }
-
 
 export const defaultSettings = {
   gridSize: 16,

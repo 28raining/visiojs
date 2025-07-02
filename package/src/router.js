@@ -242,38 +242,14 @@ export const constructWire = ({
     // }
     event.preventDefault(); // Optional: prevents scrolling
     const [mouseX, mouseY] = d3.pointer(touch, svg.node());
-    constructLine(
-      mouseX,
-      mouseY,
-      lineGroup,
-      wireMidPoints,
-      lineStartX,
-      lineStartY,
-      line,
-      hoverConnectorNew,
-      snapAndClipToGrid,
-      d3.zoomTransform(svg.node()),
-      initialState
-    );
+    constructLine(mouseX, mouseY, lineGroup, wireMidPoints, lineStartX, lineStartY, line, hoverConnectorNew, snapAndClipToGrid, d3.zoomTransform(svg.node()), initialState);
   });
 
   // Mouse move handler to update line
   svg.on("mousemove.drawline", function (event) {
     // checkHover(event.clientX, event.clientY);
     const [mouseX, mouseY] = d3.pointer(event, svg.node());
-    constructLine(
-      mouseX,
-      mouseY,
-      lineGroup,
-      wireMidPoints,
-      lineStartX,
-      lineStartY,
-      line,
-      hoverConnectorNew,
-      snapAndClipToGrid,
-      d3.zoomTransform(svg.node()),
-      initialState
-    );
+    constructLine(mouseX, mouseY, lineGroup, wireMidPoints, lineStartX, lineStartY, line, hoverConnectorNew, snapAndClipToGrid, d3.zoomTransform(svg.node()), initialState);
   });
   d3.select(window).on("keydown.endline", (e) => {
     if (e.key === "Escape") {

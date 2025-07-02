@@ -58,18 +58,7 @@ const dragGenerator = (dragDatabase, snapAndClipToGrid, initialState, redrawWire
 };
 // let dragHandler = dragGenerator(dragDatabase);
 
-export async function drawShape({
-  id,
-  data,
-  selectIt = false,
-  selected,
-  wireStart,
-  snapAndClipToGrid,
-  initialState,
-  redrawWireOnShape,
-  stateChanged,
-  drawWire,
-}) {
+export async function drawShape({ id, data, selectIt = false, selected, wireStart, snapAndClipToGrid, initialState, redrawWireOnShape, stateChanged, drawWire }) {
   const divId = `shape_${id}`;
   const g = d3.select("#visiojs_shapes");
   var shape = d3.select(`#${divId}`);
