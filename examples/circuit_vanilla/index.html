@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/visiojs@0.0.0/dist/visiojs.css" />
+    <link rel="stylesheet" href="./App.css" />
+    <script type="module">
+      import { visiojs } from "https://cdn.jsdelivr.net/npm/visiojs@0.0.0/dist/visiojs.js";
+      const addShapes = {
+        opAmp: {
+          image: "opAmp.svg",
+          connectors: [
+            [0, 64],
+            [0, 128],
+            [128, 96],
+          ],
+          x: 0,
+          y: 0,
+        },
+        vIn: {
+          image: "vIn.svg",
+          connectors: [[64, 0]],
+          x: 0,
+          y: 0,
+        },
+        resistor: {
+          image: "resistor.svg",
+          connectors: [
+            [16, 48],
+            [112, 48],
+          ],
+          x: 0,
+          y: 0,
+          label: {
+            text: "R1",
+            class: "circuit_label",
+            x: 64,
+            y: 14,
+          },
+        },
+        capacitor: {
+          image: "capacitor.svg",
+          connectors: [
+            [0, -32],
+            [0, 48],
+          ],
+          x: 0,
+          y: 0,
+          offset: [-48, -64],
+          label: {
+            text: "C1",
+            class: "circuit_label",
+            x: 48,
+            y: 24,
+          },
+        },
+        inductor: {
+          image: "inductor.svg",
+          connectors: [
+            [16, 64],
+            [144, 64],
+          ],
+          x: 0,
+          y: 0,
+          label: {
+            text: "L1",
+            class: "circuit_label",
+            x: 80,
+            y: 32,
+          },
+        },
+        gnd: {
+          image: "gnd.svg",
+          connectors: [[64, 16]],
+          x: 0,
+          y: 0,
+        },
+        vout: {
+          image: "vout.svg",
+          connectors: [[16, 64]],
+          x: 0,
+          y: 0,
+        },
+      };
+      export var initialState = {
+        settings: {
+          defaultZoom: 0.75,
+        },
+        shapes: [
+          {
+            image: "vIn.svg",
+            connectors: [[64, 0]],
+            x: -336,
+            y: 16,
+          },
+          {
+            image: "test.svg",
+            x: 0,
+            y: 0,
+            fixed: true,
+            offset: [-32, -32],
+          },
+        ],
+      };
+      const numUndos = 15;
+      const container = document.getElementById("shape-buttons");
+      Object.keys(addShapes).forEach((key) => {
+        const shape = addShapes[key];
+        const btn = document.createElement("button");
+        btn.textContent = key;
+        btn.style.display = "inline-block";
+        btn.style.cursor = "grab";
+        btn.style.marginRight = "10px";
+        btn.draggable = true;
+        btn.addEventListener("dragstart", function (e) {
+          window.dragData = shape;
+          e.dataTransfer.setData("application/json", JSON.stringify(shape));
+        });
+        btn.addEventListener("click", function () {
+          vjs.addShape(shape);
+        });
+        container.appendChild(btn);
+      });
+
+      let history = { pointer: 0, state: [] };
+      function setHistory(newValue) {
+        history = newValue;
+      }
+
+      function trackHistory(newState) {
+        const deepCopyState = JSON.parse(JSON.stringify(newState));
+        const h = { ...history };
+        //there was an undo, then a new state was created. Throwing away the future history
+        if (h.pointer < h.state.length - 1) h.state = h.state.slice(0, h.pointer + 1);
+        if (h.state.length == numUndos) h.state = [...h.state.slice(1), deepCopyState];
+        else h.state = [...h.state, deepCopyState];
+        h.pointer = h.state.length - 1;
+        setHistory(h);
+      }
+
+      function undo() {
+        //when undo is called form useeffect it receives stale state. Therefore, all state accessing is done inside the setHistory function
+        if (history.pointer == 0) return; //no more undos
+        vjs.redraw(history.state[history.pointer - 1]);
+        const h = { ...history };
+        h.pointer = h.pointer - 1;
+        setHistory(h);
+      }
+
+      function redo() {
+        if (history.pointer >= history.state.length - 1) return; //no more redos
+        vjs.redraw(history.state[history.pointer + 1]);
+        const h = { ...history };
+        h.pointer = h.pointer + 1;
+        setHistory(h);
+      }
+
+      const vjs = visiojs({
+        initialState: initialState,
+        stateChanged: trackHistory,
+      });
+      window.onload = () => {
+        vjs.init();
+      };
+
+      // Delete button
+      document.getElementById("delete").addEventListener("click", function () {
+        vjs.deleteSelected();
+      });
+
+      // Undo button
+      document.getElementById("undo").addEventListener("click", function () {
+        undo();
+      });
+
+      // Redo button
+      document.getElementById("redo").addEventListener("click", function () {
+        redo();
+      });
+    </script>
+    <title>Vanilla JS</title>
+  </head>
+  <body>
+    <div style="display: flex; justify-content: center">
+      <div style="width: 1000px; height: 1000px; margin-top: 50px">
+        <div id="shape-buttons"></div>
+        <button style="display: inline-block; margin-right: 10px" id="delete">Delete</button>
+        <button style="display: inline-block; margin-right: 10px" id="undo">Undo</button>
+        <button style="display: inline-block" id="redo">Redo</button>
+        <div>
+          <div style="border: 1px solid rgb(222, 226, 230); display: inline-block">
+            <svg id="visiojs_top" class="visiojs_svg"></svg>
+          </div>
+        </div>
+        <input type="text" />
+      </div>
+    </div>
+  </body>
+</html>

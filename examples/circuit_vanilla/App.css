@@ -1,0 +1,33 @@
+.visiojs_svg {
+  height: 600px;
+  max-height: 90vh;
+  width: 800px;
+  background-color: white;
+}
+.visiojs_svg:focus {
+  outline: none; /* dark gray */
+}
+
+.visiojs_wire {
+  stroke-width: 5px;
+}
+
+.shape_path {
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke: black;
+  fill: none;
+}
+
+.circuit_label {
+  font-size: 1.5em;
+  font-family: "Arial", monospace;
+  color: #000000;
+  text-anchor: middle;
+  dominant-baseline: text-after-edge;
+}
+
+body {
+  background-color: azure;
+}

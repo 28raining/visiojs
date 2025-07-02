@@ -7,7 +7,14 @@ export default defineConfig({
     lib: {
       entry: './src/visiojs.js',
       name: 'visiojs',
-      fileName: 'visiojs'
+      // fileName: 'visiojs',
+      formats: ['es', 'umd', 'cjs'],
+      fileName: (format) => {
+        if (format === 'es') return 'visiojs.js';
+        if (format === 'umd') return 'visiojs.umd.js';
+        if (format === 'cjs') return 'visiojs.umd.cjs';
+        return `visiojs.${format}.js`;
+      },
     }
   },
 });

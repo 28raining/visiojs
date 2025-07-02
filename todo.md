@@ -1,4 +1,5 @@
 ## Critical to-do's
+html - import svg's inline so it can go to codepen?
 200 - if using svg viewbox can you set the size? and jpeg
 11 - deleting shape and wire connecting 2 different shapes doesn't bring back the wire on undo
 67 - Push to npm

@@ -1,11 +1,11 @@
-import { useRef, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { visiojs } from "visiojs";
+import "visiojs/dist/visiojs.css";
 import "./App.css";
 import { initialState } from "./initialState.js";
 
 // var vjs; //FIXME - vjs should be a state variable?
 function App() {
-  const initializedRef = useRef(false);
   const [history, setHistory] = useState({ pointer: 0, state: [] });
   const [vjs, setVjs] = useState(null);
 
