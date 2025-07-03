@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { visiojs } from "visiojs";
+import visiojs from "visiojs";
 import "visiojs/dist/visiojs.css";
 import "./App.css";
-import { initialState } from "./initialState.js";
+import { initialSchematic } from "./initialState.js";
 
 // var vjs; //FIXME - vjs should be a state variable?
 function App() {
@@ -11,82 +11,123 @@ function App() {
 
   const numUndos = 15;
 
-  const addShapes = {
-    opAmp: {
-      image: "opAmp.svg",
-      connectors: [
-        [0, 64],
-        [0, 128],
-        [128, 96],
-      ],
-      x: 0,
+ const addShapes = {
+  opamp: {
+    image: "opamp.svg",
+    connectors: [
+      [0, -32],
+      [0, 32],
+      [128, 0],
+    ],
+    x: 0,
+    y: 0,
+    offset: [0, -96],
+    label: {
+      text: "U1",
+      class: "circuit_label",
+      x: 96,
+      y: -32,
+    },
+  },
+  resistor: {
+    image: "resistor.svg",
+    connectors: [
+      [-32, 0],
+      [64, 0],
+    ],
+    x: 0,
+    y: 0,
+    label: {
+      text: "R1",
+      class: "circuit_label",
+      x: 16,
+      y: -36,
+    },
+    offset: [-48, -48],
+  },
+  capacitor: {
+    image: "capacitor.svg",
+    connectors: [
+      [0, -32],
+      [0, 64],
+    ],
+    x: 0,
+    y: 0,
+    label: {
+      text: "C1",
+      class: "circuit_label",
+      x: -28,
       y: 0,
     },
-    vIn: {
-      image: "vIn.svg",
-      connectors: [[64, 0]],
+    offset: [-48, -64],
+  },
+  inductor: {
+    image: "inductor.svg",
+    connectors: [
+      [-64, 0],
+      [64, 0],
+    ],
+    x: 0,
+    y: 0,
+    label: {
+      text: "L1",
+      class: "circuit_label",
       x: 0,
-      y: 0,
+      y: -30,
     },
-    resistor: {
-      image: "resistor.svg",
-      connectors: [
-        [16, 48],
-        [112, 48],
-      ],
+    offset: [-80, -64],
+  },
+  vin: {
+    image: "vin.svg",
+    connectors: [[0, 0]],
+    x: 0,
+    y: 0,
+    offset: [-64, 0],
+  },
+  iin: {
+    image: "iin.svg",
+    connectors: [[0, 0]],
+    x: 0,
+    y: 0,
+    offset: [-64, 0],
+  },
+  gnd: {
+    image: "gnd.svg",
+    connectors: [[0, 0]],
+    x: 0,
+    y: 0,
+    offset: [-100, -180],
+  },
+  vprobe: {
+    image: "vprobe.svg",
+    label: {
+      text: "X1",
+      class: "circuit_label",
       x: 0,
-      y: 0,
-      label: {
-        text: "R1",
-        class: "circuit_label",
-        x: 64,
-        y: 14,
-      },
+      y: -30,
     },
-    capacitor: {
-      image: "capacitor.svg",
-      connectors: [
-        [0, -32],
-        [0, 48],
-      ],
-      x: 0,
-      y: 0,
-      offset:[-48,-64],
-      label: {
-        text: "C1",
-        class: "circuit_label",
-        x: 48,
-        y: 24,
-      },
+    connectors: [[0, 0]],
+    x: 0,
+    y: 0,
+    offset: [-10, -90],
+  },
+  iprobe: {
+    image: "iprobe.svg",
+    label: {
+      text: "Y1",
+      class: "circuit_label",
+      x: -64,
+      y: -36,
     },
-    inductor: {
-      image: "inductor.svg",
-      connectors: [
-        [16, 64],
-        [144, 64],
-      ],
-      x: 0,
-      y: 0,
-      label: {
-        text: "L1",
-        class: "circuit_label",
-        x: 80,
-        y: 32,
-      },
-    },
-    gnd: {
-      image: "gnd.svg",
-      connectors: [[64, 16]],
-      x: 0,
-      y: 0,
-    },
-    vout: {
-      image: "vout.svg",
-      connectors: [[16, 64]],
-      x: 0,
-      y: 0,
-    },
-  };
+    connectors: [
+      [-64, 0],
+      [64, 0],
+    ],
+    x: 0,
+    y: 0,
+    offset: [-96, -64],
+  },
+};
 
   const trackHistory = (newState) => {
     // console.log("state changed", newState);
@@ -125,7 +166,7 @@ function App() {
 
   useEffect(() => {
     var newVjs = visiojs({
-      initialState: initialState,
+      initialState: initialSchematic,
       stateChanged: trackHistory,
     });
     setVjs(newVjs);

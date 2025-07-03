@@ -1,79 +1,120 @@
-//  or to use module, uncomment below line and remove the import from index.html
+//  or to use module, uncomment below line, remove the import from index.html, and inport this file as a module
 //import { visiojs } from "https://cdn.jsdelivr.net/npm/visiojs@latest/dist/visiojs.js";
 const addShapes = {
-  opAmp: {
+  opamp: {
     image: "opamp.svg",
     connectors: [
-      [0, 64],
-      [0, 128],
-      [128, 96],
+      [0, -32],
+      [0, 32],
+      [128, 0],
     ],
     x: 0,
     y: 0,
-  },
-  vIn: {
-    image: "vin.svg",
-    connectors: [[64, 0]],
-    x: 0,
-    y: 0,
+    offset: [0, -96],
+    label: {
+      text: "U1",
+      class: "circuit_label",
+      x: 96,
+      y: -32,
+    },
   },
   resistor: {
     image: "resistor.svg",
     connectors: [
-      [16, 48],
-      [112, 48],
+      [-32, 0],
+      [64, 0],
     ],
     x: 0,
     y: 0,
     label: {
       text: "R1",
       class: "circuit_label",
-      x: 64,
-      y: 14,
+      x: 16,
+      y: -36,
     },
+    offset: [-48, -48],
   },
   capacitor: {
     image: "capacitor.svg",
     connectors: [
       [0, -32],
-      [0, 48],
+      [0, 64],
     ],
     x: 0,
     y: 0,
-    offset: [-48, -64],
     label: {
       text: "C1",
       class: "circuit_label",
-      x: 48,
-      y: 24,
+      x: -28,
+      y: 0,
     },
+    offset: [-48, -64],
   },
   inductor: {
     image: "inductor.svg",
     connectors: [
-      [16, 64],
-      [144, 64],
+      [-64, 0],
+      [64, 0],
     ],
     x: 0,
     y: 0,
     label: {
       text: "L1",
       class: "circuit_label",
-      x: 80,
-      y: 32,
+      x: 0,
+      y: -30,
     },
+    offset: [-80, -64],
+  },
+  vin: {
+    image: "vin.svg",
+    connectors: [[0, 0]],
+    x: 0,
+    y: 0,
+    offset: [-64, 0],
+  },
+  iin: {
+    image: "iin.svg",
+    connectors: [[0, 0]],
+    x: 0,
+    y: 0,
+    offset: [-64, 0],
   },
   gnd: {
     image: "gnd.svg",
-    connectors: [[64, 16]],
+    connectors: [[0, 0]],
     x: 0,
     y: 0,
+    offset: [-100, -180],
   },
-  vout: {
+  vprobe: {
     image: "vprobe.svg",
-    connectors: [[16, 64]],
+    label: {
+      text: "X1",
+      class: "circuit_label",
+      x: 0,
+      y: -30,
+    },
+    connectors: [[0, 0]],
     x: 0,
     y: 0,
+    offset: [-10, -90],
+  },
+  iprobe: {
+    image: "iprobe.svg",
+    label: {
+      text: "Y1",
+      class: "circuit_label",
+      x: -64,
+      y: -36,
+    },
+    connectors: [
+      [-64, 0],
+      [64, 0],
+    ],
+    x: 0,
+    y: 0,
+    offset: [-96, -64],
   },
 };
 const initialSchematic = {
