@@ -1,10 +1,14 @@
 {
   "name": "visiojs",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "files": [
     "dist"
   ],
+   "repository": {
+    "type": "git",
+    "url": "https://github.com/28raining/visiojs.git"
+  },
   "main": "./dist/visiojs.umd.cjs",
   "module": "./dist/visiojs.js",
   "unpkg": "./dist/visiojs.umd.js",
