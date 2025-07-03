@@ -1,10 +1,10 @@
 # visiojs
 
-A javascript library with 1% of Microsoft Visio's features!
+An embeddable javascript library with 1% of Microsoft Visio's features!
 
 ![visiojs demo](https://raw.githubusercontent.com/28raining/visiojs/main/package/demo.png)
 
-Use this library to build flow charts and circuits inside the browser. 
+Use this library to let users build flow charts and circuits inside the browser. 
 Size is ~100KB gzipped
 
 visiojs is great because
@@ -64,11 +64,12 @@ Import as a module: (see codepen)
 
 Import globally (see vanilla js example)
 ```
-here
+<script src="https://cdn.jsdelivr.net/npm/visiojs"></script>
 ```
 
 
 ## Documentation
 
-Doesn't exist. Please refer to the example projects to see every feature, and look at visiojs.css to see which styles can be overriden.
+Is a work in progress...
+Please refer to the example projects to see every feature, and look at visiojs.css to see which styles can be overriden.
 
