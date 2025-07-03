@@ -492,4 +492,4 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
   };
 };
 
-export { visiojs };
+export default visiojs;
