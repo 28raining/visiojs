@@ -1,7 +1,11 @@
 {
   "name": "visiojs",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
+  "description": "Microsoft Visio javascript alternative for creating diagrams and schematics",
+  "keywords": ["visio", "schematic", "flowchart", "schematic", "schematics", "diagram", "svg"],
+  "author": "Will Kelsey",
+  "license": "MIT",
   "files": [
     "dist"
   ],
