@@ -1,4 +1,4 @@
-# React + Vite
+# Plain (vanilla) js
 Node
 `npx serve`
 
