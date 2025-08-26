@@ -2,28 +2,18 @@
 html - import svg's inline so it can go to codepen?
 200 - if using svg viewbox can you set the size? and jpeg
 11 - deleting shape and wire connecting 2 different shapes doesn't bring back the wire on undo
-67 - Push to npm
-68 - create examples with react + npm, and with vanilla js and no npm
 
 ## ToDO
 33 - Create an example with 100x100 boxes (10k components)
-37 - Use x and y in shape to translate to 0,0. In case user has an SVG with 500px of offset or something
-38 - Fix this issue where SVG isn't filling the full width in circuit solver
--- can use this to propery rotate around its center?
 44 - test with jpg import instead of svg
-66 - create function to create gzipped url param
-
 
 ## Lower priority
 - can svgwhole ref now be removed the because the border is re-added
-11d - make the connectors blue when clicked line
 16 - pass errors back to some handler (what errors - there shouldn't be any!)
 17 - you can select mulitple things and drag (wire and shape)
 31d - currently it's possible to route under the op amp - anything easy to do to solve it?
 34 - create jsdoc documentation
 45 - should mouseout be swapped with mouseleave? mouse can move too fast to trigger mouseout
-43 - click within bounding box, not on the path -- we'll see how the circuit drawer turns out
-76 - If wire is short (100px?) then don't add a kink
 
 
 ## Done
@@ -154,3 +144,10 @@ line between snowman connectors have an elbow?
 
 -- because undo saves the day (now it works well)
 48 - multi select not working well - change it to requiring ctrl or cmd
+67 - Push to npm
+68 - create examples with react + npm, and with vanilla js and no npm
+37 - Use x and y in shape to translate to 0,0. In case user has an SVG with 500px of offset or something
+38 - Fix this issue where SVG isn't filling the full width in circuit solver
+-- can use this to propery rotate around its center?
+66 - create function to create gzipped url param
+11d - make the connectors blue when clicked line

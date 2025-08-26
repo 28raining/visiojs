@@ -29,6 +29,26 @@ function App() {
       y: -32,
     },
   },
+  actor: {
+    image: "actor.svg",
+    connectors: [
+      [0, -32],
+      [0, 32],
+      [128, 0],
+    ],
+    // scale: "0.2 0.2",
+    width:100,
+    height:200,
+    x: 0,
+    y: 0,
+    offset: [0, 0],
+    label: {
+      text: "ACTOR",
+      class: "circuit_label",
+      x: 96,
+      y: -32,
+    },
+  },
   resistor: {
     image: "resistor.svg",
     connectors: [

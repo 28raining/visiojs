@@ -206,16 +206,8 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
     const allPoints = [startConnector, ...wire.points, endConnector];
 
     //drawing the wire from the saved state
-    // console.log("bp a")
     const optimizedPoints = visiojs_router("manhattan", allPoints, snapAndClipToGrid, nodeWireGroup, null, (o) => moveElbow(o), id);
 
-    // //make this onClick into common code?
-    // nodeWireGroup.on("mouseover", function () {
-    //   disablePanAndZoom();
-    // });
-    // nodeWireGroup.on("mouseout", function () {
-    //   enablePanAndZoom();
-    // });
     nodeWireGroup.on("click", function (e) {
       e.stopPropagation(); //prevent the click from propagating to the svg element
       if (wireStart.shapeID !== null) return; //actively drawing a wire
@@ -223,7 +215,6 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
       var connector1 = g_wholeThing.select(`#connector_${wire.start.shapeID}_${wire.start.connectorID}`);
       var connector2 = g_wholeThing.select(`#connector_${wire.end.shapeID}_${wire.end.connectorID}`);
 
-      console.log("removing pointer events from shapes");
       d3.select("#visiojs_shapes").style("pointer-events", "none").style("opacity", "0.9");
 
       //call this to add the elbows to the wire

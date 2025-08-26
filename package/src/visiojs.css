@@ -22,6 +22,13 @@
   stroke-dasharray: 5, 5;
   fill: transparent;
 }
+/* .visiojs_shape {
+  fill: transparent;
+}
+.visiojs_selected_outline {
+  outline: 1px dashed #00f;
+  outline-offset: 2px;
+} */
 .visiojs_elbow {
   stroke: #a0a0a0;
   stroke-width: 0.5;

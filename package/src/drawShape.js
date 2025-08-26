@@ -61,6 +61,8 @@ const dragGenerator = (dragDatabase, snapAndClipToGrid, initialState, redrawWire
 export async function drawShape({ id, data, selectIt = false, selected, wireStart, snapAndClipToGrid, initialState, redrawWireOnShape, stateChanged, drawWire }) {
   const divId = `shape_${id}`;
   const g = d3.select("#visiojs_shapes");
+  const svg = d3.select("#visiojs_top");
+
   var shape = d3.select(`#${divId}`);
   if (data === null) {
     shape.remove();
@@ -81,8 +83,8 @@ export async function drawShape({ id, data, selectIt = false, selected, wireStar
 
   // console.log('drawing shape', divId, d3.select(divId).empty())
   if (shape.empty()) {
-    shape = g.append("g").attr("id", divId);
-    const imageGroup = shape.append("g");
+    shape = g.append("g").attr("id", divId).attr("class", "visiojs_shape visiojs_selected_outline");
+    const imageGroup = shape.append("g").attr("id", `${divId}_image`);
     var img;
     if (url.endsWith(".svg")) {
       const data = await d3.xml(url);
@@ -92,12 +94,16 @@ export async function drawShape({ id, data, selectIt = false, selected, wireStar
     } else img = imageGroup.append("image").attr("href", url);
     imageGroup.attr("transform", `translate(${offset[0]}, ${offset[1]})`);
 
-    //add a clickable backround
+    if (data.width) img.attr("width", data.width);
+    if (data.height) img.attr("height", data.height);
+    // imageGroup.attr("class", "visiojs_shape visiojs_selected_outline");
+    // img.attr("class", "visiojs_selected_outline");
 
     if (selectIt) {
       selected.push(divId);
     }
-    addHoverRect(shape, id, offset, initialState, redrawWireOnShape, img, selectIt, stateChanged);
+    //add a clickable backround
+    addHoverRect(shape, id, initialState, redrawWireOnShape, selectIt, stateChanged);
 
     if (label) {
       shape
@@ -139,8 +145,16 @@ export async function drawShape({ id, data, selectIt = false, selected, wireStar
       });
       shape.on("click", function (e) {
         if (wireStart.shapeID !== null) return;
-
         e.stopPropagation(); //prevent the click from propagating to the svg element
+
+        //check if there's a line underneath. If yes, cancel this click and click that instead
+        const el = document.elementsFromPoint(e.x, e.y);
+        for (const e2 of el) {
+          if (e2.classList.contains("visiojs_wire")) {
+            e2.parentElement.dispatchEvent(new MouseEvent("click", e));
+            return;
+          }
+        }
 
         // clickedShape = true;
         img.attr("opacity", 1.0); //restore opacity
@@ -150,7 +164,6 @@ export async function drawShape({ id, data, selectIt = false, selected, wireStar
           shape.selectAll(".visiojs_hover_rect").style("opacity", "1");
           shape.selectAll(".visiojs_hover_rotate").style("visibility", null);
         } else {
-          console.log("removing rect 3");
           selected.splice(index, 1);
           // shape.selectAll(".visiojs_hover_rect").remove();
           shape.selectAll(".visiojs_hover_rect").style("opacity", "0");
@@ -168,21 +181,18 @@ export async function drawShape({ id, data, selectIt = false, selected, wireStar
   shape.attr("transform", `translate(${x}, ${y}) ${rotateStr}`);
 }
 
-function addHoverRect(shape, shapeID, offset, initialState, redrawWireOnShape, img, selectIt, stateChanged) {
-  // const bbox = itemToBox.node().getBBox();
-  const bbox = img.node().getBBox();
-  const [rotateX, rotateY] = [bbox.x + bbox.width + offset[0] + 10, bbox.y + offset[1] - 10];
-
+function addHoverRect(shape, shapeID, initialState, redrawWireOnShape, selectIt, stateChanged) {
+  const bbox = shape.node().getBBox();
   const bgRect = shape
-    .append("rect")
-    .attr("x", bbox.x - 5)
-    .attr("y", bbox.y - 5)
-    .attr("width", bbox.width + 10)
-    .attr("height", bbox.height + 10)
-    .attr("class", "visiojs_hover_rect")
-    .attr("transform", `translate(${offset[0]}, ${offset[1]})`);
+  .append("rect")
+  .attr("x", bbox.x - 5)
+  .attr("y", bbox.y - 5)
+  .attr("width", bbox.width + 10)
+  .attr("height", bbox.height + 10)
+  .attr("class", "visiojs_hover_rect");
   if (!selectIt) bgRect.style("opacity", "0");
-  // bgRect.style("opacity", "1");
+
+  const [rotateX, rotateY] = [bbox.x + bbox.width + 10, bbox.y - 10];
   const rotateButton = shape
     .append("g")
     .attr("width", "16")
@@ -195,14 +205,6 @@ function addHoverRect(shape, shapeID, offset, initialState, redrawWireOnShape, i
   rotateButton.append("path").attr("fill-rule", "evenodd").attr("d", "M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z");
   rotateButton.append("path").attr("d", "M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466");
   rotateButton.append("rect").attr("x", "0").attr("y", "0").attr("width", "16").attr("height", "16").attr("fill", "transparent"); //an area to click on
-  // rotateButton.on("mouseover", function () {
-  //   disablePanAndZoom();
-  //   shape.on(".drag", null);
-  // });
-  // rotateButton.on("mouseout", function () {
-  //   enablePanAndZoom();
-  //   shape.call(dragHandler());
-  // });
   rotateButton.on("click", function (e) {
     e.stopPropagation();
     const rotation = getGroupRotation(shape.attr("transform"));
@@ -216,10 +218,8 @@ function addHoverRect(shape, shapeID, offset, initialState, redrawWireOnShape, i
 
     stateChanged(initialState);
 
-    // console.log(initialState);
   });
 
-  // console.log(temp)
 }
 
 const connector = ({ x, y, group, shapeID, connectorID, wireStart, snapAndClipToGrid, initialState, drawWire, stateChanged }) => {
