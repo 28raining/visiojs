@@ -61,7 +61,6 @@ const dragGenerator = (dragDatabase, snapAndClipToGrid, initialState, redrawWire
 export async function drawShape({ id, data, selectIt = false, selected, wireStart, snapAndClipToGrid, initialState, redrawWireOnShape, stateChanged, drawWire }) {
   const divId = `shape_${id}`;
   const g = d3.select("#visiojs_shapes");
-  const svg = d3.select("#visiojs_top");
 
   var shape = d3.select(`#${divId}`);
   if (data === null) {

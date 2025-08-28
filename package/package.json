@@ -1,17 +1,25 @@
 {
   "name": "visiojs",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "type": "module",
   "types": "types/visiojs.d.ts",
   "description": "Microsoft Visio javascript alternative for creating diagrams and schematics",
-  "keywords": ["visio", "schematic", "flowchart", "schematic", "schematics", "diagram", "svg"],
+  "keywords": [
+    "visio",
+    "schematic",
+    "flowchart",
+    "schematic",
+    "schematics",
+    "diagram",
+    "svg"
+  ],
   "author": "Will Kelsey",
   "license": "MIT",
   "files": [
     "dist",
     "types"
   ],
-   "repository": {
+  "repository": {
     "type": "git",
     "url": "https://github.com/28raining/visiojs.git"
   },
