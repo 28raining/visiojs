@@ -1,3 +1,7 @@
 title: visiojs
 description: "Embeddable JS library for browser-based flow charts and circuits"
 theme: jekyll-theme-cayman
+permalink: pretty
+# Set baseurl to your repository name for project pages
+# If you later use a user/org site (no /repo path), you can remove or set to ""
+baseurl: "/visiojs"
