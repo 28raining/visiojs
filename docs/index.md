@@ -24,6 +24,7 @@ https://onlinecircuitsolver.com/
 ## Where to start
 - Getting Started: ./getting-started.md
 - Usage guide: ./usage.md
+- VisioJS state description: ./state.md
 - Examples:
   - React example: https://github.com/28raining/visiojs/tree/main/examples/circuit_react
   - Vanilla example: https://github.com/28raining/visiojs/tree/main/examples/circuit_vanilla
