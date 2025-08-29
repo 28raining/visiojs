@@ -44,5 +44,3 @@ Tip: Import the default CSS, then override selectively in your app’s styleshee
 ## Integration notes
 - React: Compose visiojs in an effect hook and store state in component/state management.
 - Vanilla: Initialize after DOM is ready; keep state in memory or localStorage as needed.
-
-If you need a specific recipe that isn’t in the examples, open an issue describing the use case.

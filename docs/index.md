@@ -1,8 +1,12 @@
 # visiojs
 
-An embeddable JavaScript library with a focused set of diagramming features (about 1% of Microsoft Visio) for building flow charts and circuits in the browser.
+An embeddable javascript library with 1% of Microsoft Visio's features! For building flow charts and circuits in the browser.
 
-![visiojs demo](/package/demo.png)
+![visiojs demo](images/demo.png)
+
+### See it live here
+https://codepen.io/28raining/pen/myJYavL
+https://onlinecircuitsolver.com/
 
 ## Features
 - Touch-friendly interactions
@@ -16,10 +20,6 @@ An embeddable JavaScript library with a focused set of diagramming features (abo
 - Browsers: modern evergreen browsers
 - Frameworks: vanilla JS, React (see examples)
 - Delivery: npm (ES modules/CommonJS) and CDN (ESM/UMD)
-
-## Status
-- Maturity: Stable/mature (no active development; API is largely settled)
-- License: MIT (see LICENSE)
 
 ## Where to start
 - Getting Started: ./getting-started.md
