@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import visiojs from "visiojs";
-import "visiojs/dist/visiojs.css";
+import "../../../package/src/visiojs.css" //FIXME - review this wtih AI. Not a good example for others
 import "./App.css";
 import { initialSchematic } from "./initialState.js";
 

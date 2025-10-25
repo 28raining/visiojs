@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { getGroupTranslate, getGroupRotation, rotatePoints } from "./commonFunctions.js";
+import { getGroupTranslate, getGroupRotation, rotatePoints, checkHover } from "./commonFunctions.js";
 export function visiojs_router(pathType, points, snapAndClipToGrid, wireGroup, showElbows, moveElbowCallback, wireID) {
   // console.log("points", points, "wireID", wireID);
   var i;
@@ -139,18 +139,6 @@ export function userDraggingElbow({ d3, snapAndClipToGrid, elbSvg, wireID, initi
   elbSvg.call(drag);
 }
 
-function checkHover(x, y, hoverConnectorNew) {
-  const el = document.elementFromPoint(x, y);
-  if (el && el.classList.contains("visiojs_connector") && el.id != "visiojs_tempconn") {
-    const match = el.id.split("_");
-    hoverConnectorNew.shapeID = Number(match[1]);
-    hoverConnectorNew.connectorID = Number(match[2]);
-  } else {
-    hoverConnectorNew.shapeID = null;
-    hoverConnectorNew.connectorID = null;
-  }
-}
-
 function constructLine(mouseX, mouseY, lineGroup, wireMidPoints, lineStartX, lineStartY, line, hoverConnector, snapAndClipToGrid, zoomTform, initialState) {
   const zz = zoomTform;
   const start = [lineStartX, lineStartY];
@@ -238,8 +226,6 @@ export const constructWire = ({
 
   svg.on("touchmove.drawline", function (event) {
     const touch = event.touches[0]; // Get the first touch point
-    // checkHover(touch.clientX, touch.clientY);
-    // }
     event.preventDefault(); // Optional: prevents scrolling
     const [mouseX, mouseY] = d3.pointer(touch, svg.node());
     constructLine(mouseX, mouseY, lineGroup, wireMidPoints, lineStartX, lineStartY, line, hoverConnectorNew, snapAndClipToGrid, d3.zoomTransform(svg.node()), initialState);
@@ -247,7 +233,6 @@ export const constructWire = ({
 
   // Mouse move handler to update line
   svg.on("mousemove.drawline", function (event) {
-    // checkHover(event.clientX, event.clientY);
     const [mouseX, mouseY] = d3.pointer(event, svg.node());
     constructLine(mouseX, mouseY, lineGroup, wireMidPoints, lineStartX, lineStartY, line, hoverConnectorNew, snapAndClipToGrid, d3.zoomTransform(svg.node()), initialState);
   });

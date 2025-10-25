@@ -52,3 +52,30 @@ export function setDefaults(state) {
   }
   return state;
 }
+
+export function checkHover(x, y, hoverConnectorNew) {
+  const el = document.elementFromPoint(x, y);
+  if (el && el.classList.contains("visiojs_connector") && el.id != "visiojs_tempconn") {
+    const match = el.id.split("_");
+    hoverConnectorNew.shapeID = Number(match[1]);
+    hoverConnectorNew.connectorID = Number(match[2]);
+  } else {
+    hoverConnectorNew.shapeID = null;
+    hoverConnectorNew.connectorID = null;
+  }
+}
+export function checkHovers(x, y, hoverConnectorNew, myID) {
+  const els = document.elementsFromPoint(x, y);
+  for (const el of els) {
+
+    if (el && el.classList.contains("visiojs_connector") && el.id != "visiojs_tempconn" && el.id != myID) {
+      const match = el.id.split("_");
+      hoverConnectorNew.shapeID = Number(match[1]);
+      hoverConnectorNew.connectorID = Number(match[2]);
+      return;
+    } else {
+      hoverConnectorNew.shapeID = null;
+      hoverConnectorNew.connectorID = null;
+    }
+  }
+}

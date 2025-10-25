@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 import { constructWire } from "./router.js";
-import { getGroupTranslate, getGroupRotation, getConnectorLocation } from "./commonFunctions.js";
+import { getGroupTranslate, getGroupRotation, getConnectorLocation, checkHovers } from "./commonFunctions.js";
 
 const dragDatabase = {
   clickStartX: 0,
@@ -29,6 +29,47 @@ const dragGenerator = (dragDatabase, snapAndClipToGrid, initialState, redrawWire
         const [newX, newY] = snapAndClipToGrid([dragDatabase.objStartX + deltaX, dragDatabase.objStartY + deltaY]);
         if (newX == dragDatabase.objStartX && newY == dragDatabase.objStartY) return; //no movement
         redrawWireOnShape({ shapeID: dragDatabase.shapeID, save: true });
+        //Detect if when the shape was moved, was its connector placed on another connector to auto-add a wire
+        for (const c in initialState.shapes[dragDatabase.shapeID].connectors) {
+          const myID = "connector_" + dragDatabase.shapeID + "_" + c;
+          const endCircle = d3.select(`#${myID}`);
+          const rect = endCircle.node().getBoundingClientRect();
+          const hoverConnector = {};
+          checkHovers(rect.left + 5, rect.top + 5, hoverConnector, myID);
+          if (hoverConnector.shapeID !== null) {
+            var wireExists = false;
+            for (const w in initialState.wires) {
+              if (initialState.wires[w] === null) continue;
+              if (
+                (initialState.wires[w].start.shapeID === dragDatabase.shapeID &&
+                  initialState.wires[w].start.connectorID === Number(c) &&
+                  initialState.wires[w].end.shapeID === hoverConnector.shapeID &&
+                  initialState.wires[w].end.connectorID === hoverConnector.connectorID) ||
+                (initialState.wires[w].end.shapeID === dragDatabase.shapeID &&
+                  initialState.wires[w].end.connectorID === Number(c) &&
+                  initialState.wires[w].start.shapeID === hoverConnector.shapeID &&
+                  initialState.wires[w].start.connectorID === hoverConnector.connectorID)
+              ) {
+                // wire already exists
+                wireExists = true;
+                break;
+              }
+            }
+            if (!wireExists) {
+              //add wire to initialState
+              const newWire = {
+                start: {
+                  connectorID: Number(c),
+                  shapeID: dragDatabase.shapeID,
+                },
+                end: { ...hoverConnector },
+                points: [],
+              };
+              initialState["wires"].push(newWire);
+              break;
+            }
+          }
+        }
         stateChanged(initialState);
       })
       .on("drag", function (event) {
@@ -183,12 +224,12 @@ export async function drawShape({ id, data, selectIt = false, selected, wireStar
 function addHoverRect(shape, shapeID, initialState, redrawWireOnShape, selectIt, stateChanged) {
   const bbox = shape.node().getBBox();
   const bgRect = shape
-  .append("rect")
-  .attr("x", bbox.x - 5)
-  .attr("y", bbox.y - 5)
-  .attr("width", bbox.width + 10)
-  .attr("height", bbox.height + 10)
-  .attr("class", "visiojs_hover_rect");
+    .append("rect")
+    .attr("x", bbox.x - 5)
+    .attr("y", bbox.y - 5)
+    .attr("width", bbox.width + 10)
+    .attr("height", bbox.height + 10)
+    .attr("class", "visiojs_hover_rect");
   if (!selectIt) bgRect.style("opacity", "0");
 
   const [rotateX, rotateY] = [bbox.x + bbox.width + 10, bbox.y - 10];
@@ -216,9 +257,7 @@ function addHoverRect(shape, shapeID, initialState, redrawWireOnShape, selectIt,
     redrawWireOnShape({ shapeID: shapeID, save: true });
 
     stateChanged(initialState);
-
   });
-
 }
 
 const connector = ({ x, y, group, shapeID, connectorID, wireStart, snapAndClipToGrid, initialState, drawWire, stateChanged }) => {
