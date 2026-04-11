@@ -24,6 +24,13 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
   var g_svgGrid;
   var spacing;
   var zoomEnabled = false;
+  var initialized = false;
+
+  function requireInit(methodName) {
+    if (!initialized) {
+      throw new Error(`visiojs: call init() before ${methodName}()`);
+    }
+  }
 
   initialState = setDefaults(initialState);
   const settings = { ...initialState.settings };
@@ -147,6 +154,8 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
         zoomEnabled = true;
       }
     });
+
+    initialized = true;
   }
 
   function snapAndClipToGrid(value, clip = true) {
@@ -359,6 +368,7 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
   };
 
   function addShape(droppedData_raw, x = null, y = null) {
+    requireInit("addShape");
     deselectAll();
     svg.node().focus(); //focus on the svg so that keydown events are captured
     const droppedData = JSON.parse(JSON.stringify(droppedData_raw)); //deep copy
@@ -388,6 +398,7 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
   }
 
   function deleteSelected() {
+    requireInit("deleteSelected");
     for (const s of selected) {
       // console.log("removing id ", s);
       //remove the shape from the svg
@@ -415,6 +426,7 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
   }
 
   function redraw(newState) {
+    requireInit("redraw");
     deselectAll();
     const oldState = JSON.parse(JSON.stringify(initialState)); //save the old state for comparison
     initialState.shapes = JSON.parse(JSON.stringify(newState.shapes)); //update the initial state with the new state

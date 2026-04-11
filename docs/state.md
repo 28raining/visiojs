@@ -117,7 +117,7 @@ const vjs = visiojs({
 });
 ```
 
-Undo/redo with redraw:
+Undo/redo with redraw (after `vjs.init()`):
 ```js
 function undo() {
   if (history.pointer === 0) return;
