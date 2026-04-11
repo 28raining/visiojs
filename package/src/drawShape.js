@@ -99,6 +99,30 @@ const dragGenerator = (dragDatabase, snapAndClipToGrid, initialState, redrawWire
 };
 // let dragHandler = dragGenerator(dragDatabase);
 
+function syncShapeLabel(shape, label) {
+  const textSel = shape.select("text.visiojs_label");
+  if (label) {
+    if (textSel.empty()) {
+      shape
+        .append("text")
+        .attr("stroke", "none") // prevent inherited stroke outline
+        .attr("x", label.x)
+        .attr("y", label.y)
+        .text(label.text)
+        .attr("class", `visiojs_label ${label.class}`);
+    } else {
+      textSel
+        .attr("stroke", "none")
+        .attr("x", label.x)
+        .attr("y", label.y)
+        .text(label.text)
+        .attr("class", `visiojs_label ${label.class}`);
+    }
+  } else {
+    textSel.remove();
+  }
+}
+
 export async function drawShape({ id, data, selectIt = false, selected, wireStart, snapAndClipToGrid, initialState, redrawWireOnShape, stateChanged, drawWire }) {
   const divId = `shape_${id}`;
   const g = d3.select("#visiojs_shapes");
@@ -145,15 +169,7 @@ export async function drawShape({ id, data, selectIt = false, selected, wireStar
     //add a clickable backround
     addHoverRect(shape, id, initialState, redrawWireOnShape, selectIt, stateChanged);
 
-    if (label) {
-      shape
-        .append("text")
-        .attr("stroke", "none") // prevent inherited stroke outline
-        .attr("x", label.x)
-        .attr("y", label.y)
-        .text(label.text)
-        .attr("class", `visiojs_label ${label.class}`);
-    }
+    syncShapeLabel(shape, label);
 
     for (let conn = 0; conn < connectors.length; conn++) {
       const c = connectors[conn];
@@ -214,6 +230,8 @@ export async function drawShape({ id, data, selectIt = false, selected, wireStar
       });
       shape.call(dragGenerator(dragDatabase, snapAndClipToGrid, initialState, redrawWireOnShape, stateChanged)());
     }
+  } else {
+    syncShapeLabel(shape, label);
   }
   // for (const a in attributes) shape.attr(a, attributes[a]);
   var rotateStr = "";
