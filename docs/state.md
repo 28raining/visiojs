@@ -79,11 +79,13 @@ Tip: Keep shapeID/connectorID consistent. connectorID is the index within that s
 
 ## stateChanged(state)
 
-Optional callback invoked whenever visiojs mutates the state, for example:
+Optional callback invoked when visiojs treats a change as **user-driven on the canvas** (or when you use `applyState` with `source: 'user'`). For example:
 - After adding a shape
 - After finishing a drag/move of a shape
 - After creating a wire or moving a wire elbow
 - After deleting a selected shape or wire
+
+It is **not** invoked when you apply full state with **`applyState(nextState, { source: 'programmatic' })`** (including the legacy **`redraw(nextState)`**, which is equivalent to that call). Use programmatic apply when your app already updated its own undo stack or React state—otherwise `stateChanged` would duplicate history entries.
 
 Signature:
 ```js
@@ -93,6 +95,15 @@ function stateChanged(state) { /* ... */ }
 Important behavior:
 - The `state` object is the live, already-mutated in-memory state used by visiojs.
 - If you keep history or need immutability, deep-clone before storing.
+
+## applyState(nextState, { source })
+
+Requires `vjs.init()` first. Replaces `shapes` and `wires` from `nextState` and repaints (same geometry update path as the older `redraw` API).
+
+- **`source: 'programmatic'`** — Update and repaint only; **does not** call `stateChanged`. Use for undo/redo, syncing from a React panel, loading a document, etc., when the host has already recorded the transition.
+- **`source: 'user'`** — Same repaint, then calls **`stateChanged(initialState)` once** after updates. Rare: use when the host explicitly wants the same notification path as a canvas edit.
+
+`redraw(nextState)` remains available as a backward-compatible alias for `applyState(nextState, { source: 'programmatic' })`.
 
 Example (vanilla) history tracker:
 ```js
@@ -117,23 +128,25 @@ const vjs = visiojs({
 });
 ```
 
-Undo/redo with redraw (after `vjs.init()`):
+Undo/redo with programmatic apply (after `vjs.init()`), so `stateChanged` does not push another history frame:
 ```js
 function undo() {
   if (history.pointer === 0) return;
-  vjs.redraw(history.state[history.pointer - 1]);
+  vjs.applyState(history.state[history.pointer - 1], { source: "programmatic" });
   history = { ...history, pointer: history.pointer - 1 };
 }
 
 function redo() {
   if (history.pointer >= history.state.length - 1) return;
-  vjs.redraw(history.state[history.pointer + 1]);
+  vjs.applyState(history.state[history.pointer + 1], { source: "programmatic" });
   history = { ...history, pointer: history.pointer + 1 };
 }
 ```
 
+**React / side panel:** When the user edits a property (e.g. a label) in your UI, you can build `nextState` and call `applyState(nextState, { source: "user" })` so **`stateChanged` runs once** and your existing history helper (same as for canvas edits) appends a snapshot—no duplicate history logic in the panel. Do **not** invoke `applyState` from inside a `useState` functional updater: in development, **React Strict Mode runs that updater twice**, so `stateChanged` would run twice and you would push two undo steps. Read the current snapshot from a **ref** (kept in sync with history) or similar, then call `applyState` from the event handler only. Alternatively, update history yourself, then use `applyState(nextState, { source: "programmatic" })` if you do not want `stateChanged` to run (e.g. same pattern as undo/redo).
+
 Notes:
-- vjs.redraw expects a full state object with `shapes` and `wires`. It updates geometry; it does not change `settings`.
+- `applyState` / `redraw` expect a full state object with `shapes` and `wires`. They update geometry; they do not change `settings`.
 - Coordinates are in canvas space; snapping is controlled by `settings.gridSize`.
 - For concrete, runnable examples, see:
   - Vanilla: examples/circuit_vanilla/index.js

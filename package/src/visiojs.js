@@ -425,15 +425,22 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
     deselectAll();
   }
 
-  function redraw(newState) {
-    requireInit("redraw");
+  /**
+   * Replace shapes and wires from `newState`, repaint, and optionally notify `stateChanged`.
+   * @param {object} newState - Full state with `shapes` and `wires`.
+   * @param {{ source: 'user' | 'programmatic' }} options - `programmatic` does not call `stateChanged`; `user` calls it once after updates.
+   */
+  function applyState(newState, { source }) {
+    requireInit("applyState");
     deselectAll();
     const oldState = JSON.parse(JSON.stringify(initialState)); //save the old state for comparison
     initialState.shapes = JSON.parse(JSON.stringify(newState.shapes)); //update the initial state with the new state
     initialState.wires = JSON.parse(JSON.stringify(newState.wires)); //update the initial state with the new state
-    // console.log("redrawing", oldState, initialState);
 
-    // console.log("redrawing", oldState.shapes, initialState.shapes);
+    const notifyIfUser = () => {
+      if (source === "user") stateChanged(initialState);
+    };
+
     //note - take advantage that we know only one thing can change between states. only one shape can change, and if a shape changes then wire didn't change
     //firstly compare the shapes
     if (!equal(oldState.shapes, initialState.shapes)) {
@@ -442,7 +449,7 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
       //1 - check if shape was removed
       if (initialState.shapes.length < oldState.shapes.length) {
         d3.select(`#shape_${oldState.shapes.length - 1}`).remove();
-        // oldState = initialState;
+        notifyIfUser();
         return;
       }
 
@@ -464,18 +471,17 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
             drawWire,
           });
           redrawWireOnShape({ shapeID: s });
-          // return;
         }
       }
       if (shapeAdded) {
-        // oldState = initialState;
+        notifyIfUser();
         return;
       }
       console.log("ERROR - some shape change but not sure what was changed?");
     } else if (!equal(oldState.wires, initialState.wires)) {
       if (initialState.wires.length < oldState.wires.length) {
         d3.select(`#wire_${oldState.wires.length - 1}`).remove();
-        // oldState = initialState;
+        notifyIfUser();
         return;
       }
       //2 - redraw any wires that have changed
@@ -485,12 +491,20 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
         }
       }
     } else console.log("it's all the same");
+
+    notifyIfUser();
+  }
+
+  /** @deprecated Use {@link applyState} with `{ source: 'programmatic' }` instead. */
+  function redraw(newState) {
+    applyState(newState, { source: "programmatic" });
   }
 
   return {
     addShape,
     deleteSelected,
     redraw,
+    applyState,
     init,
   };
 };

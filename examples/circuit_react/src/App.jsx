@@ -1,15 +1,26 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import visiojs from "visiojs";
 import "../../../package/src/visiojs.css" //FIXME - review this wtih AI. Not a good example for others
 import "./App.css";
 import { initialSchematic } from "./initialState.js";
 
+/** Resistor R0 in the bundled schematic — edit its reference label from the panel. */
+const LABEL_EDIT_SHAPE_INDEX = 4;
+
 // var vjs; //FIXME - vjs should be a state variable?
 function App() {
   const [history, setHistory] = useState({ pointer: 0, state: [] });
+  const historyRef = useRef(history);
   const [vjs, setVjs] = useState(null);
+  const [labelDraft, setLabelDraft] = useState(
+    () => initialSchematic.shapes[LABEL_EDIT_SHAPE_INDEX]?.label?.text ?? ""
+  );
 
   const numUndos = 15;
+
+  useEffect(() => {
+    historyRef.current = history;
+  }, [history]);
 
  const addShapes = {
   opamp: {
@@ -167,7 +178,7 @@ function App() {
     //when undo is called form useeffect it receives stale state. Therefore, all state accessing is done inside the setHistory function
     setHistory((old_h) => {
       if (old_h.pointer == 0) return old_h; //no more undos
-      vjs.redraw(old_h.state[old_h.pointer - 1]);
+      vjs.applyState(old_h.state[old_h.pointer - 1], { source: "programmatic" });
       const h = { ...old_h };
       h.pointer = h.pointer - 1;
       return h;
@@ -177,11 +188,25 @@ function App() {
   function redo() {
     setHistory((old_h) => {
       if (old_h.pointer >= old_h.state.length - 1) return old_h; //no more redos
-      vjs.redraw(old_h.state[old_h.pointer + 1]);
+      vjs.applyState(old_h.state[old_h.pointer + 1], { source: "programmatic" });
       const h = { ...old_h };
       h.pointer = h.pointer + 1;
       return h;
     });
+  }
+
+  function applyResistorLabelFromPanel() {
+    if (!vjs) return;
+    // Do not call applyState inside setHistory's updater — React Strict Mode runs that updater
+    // twice in development, which would fire stateChanged / trackHistory twice (double undo).
+    const old_h = historyRef.current;
+    const base = old_h.state[old_h.pointer];
+    if (!base) return;
+    const next = JSON.parse(JSON.stringify(base));
+    const shape = next.shapes[LABEL_EDIT_SHAPE_INDEX];
+    if (!shape?.label) return;
+    shape.label.text = labelDraft;
+    vjs.applyState(next, { source: "user" });
   }
 
   useEffect(() => {
@@ -195,6 +220,12 @@ function App() {
   useEffect(() => {
     if (vjs) vjs.init();
   }, [vjs]);
+
+  useEffect(() => {
+    const st = history.state[history.pointer];
+    const text = st?.shapes?.[LABEL_EDIT_SHAPE_INDEX]?.label?.text;
+    if (text !== undefined) setLabelDraft(text);
+  }, [history]);
 
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
@@ -226,13 +257,28 @@ function App() {
           Redo
         </button>
 
+        <div style={{ marginTop: "12px", marginBottom: "8px" }}>
+          <label htmlFor="resistor-label-input" style={{ marginRight: "8px" }}>
+            R0 label (panel edit):
+          </label>
+          <input
+            id="resistor-label-input"
+            type="text"
+            value={labelDraft}
+            onChange={(e) => setLabelDraft(e.target.value)}
+            style={{ marginRight: "8px" }}
+          />
+          <button type="button" onClick={() => applyResistorLabelFromPanel()} disabled={!vjs}>
+            Apply label
+          </button>
+        </div>
+
         <div>
           <div style={{ border: "1px solid rgb(222, 226, 230)", display: "inline-block" }}>
             <svg id="visiojs_top" className="visiojs_svg"></svg>
           </div>
         </div>
 
-        <input type="text" />
       </div>
     </div>
   );

@@ -268,6 +268,9 @@ const initialSchematic = {
   ],
 };
 const numUndos = 15;
+/** Resistor R0 in the bundled schematic — same index as the React example. */
+const LABEL_EDIT_SHAPE_INDEX = 4;
+
 const container = document.getElementById("shape-buttons");
 Object.keys(addShapes).forEach((key) => {
   const shape = addShapes[key];
@@ -292,6 +295,19 @@ function setHistory(newValue) {
   history = newValue;
 }
 
+function applyProgrammaticState(next) {
+  if (typeof vjs.applyState === "function") vjs.applyState(next, { source: "programmatic" });
+  else vjs.redraw(next);
+}
+
+function syncResistorLabelInput() {
+  const st = history.state[history.pointer];
+  const input = document.getElementById("resistor-label");
+  if (input && st?.shapes?.[LABEL_EDIT_SHAPE_INDEX]?.label) {
+    input.value = st.shapes[LABEL_EDIT_SHAPE_INDEX].label.text;
+  }
+}
+
 function trackHistory(newState) {
   const deepCopyState = JSON.parse(JSON.stringify(newState));
   const h = { ...history };
@@ -306,18 +322,20 @@ function trackHistory(newState) {
 function undo() {
   //when undo is called form useeffect it receives stale state. Therefore, all state accessing is done inside the setHistory function
   if (history.pointer == 0) return; //no more undos
-  vjs.redraw(history.state[history.pointer - 1]);
+  applyProgrammaticState(history.state[history.pointer - 1]);
   const h = { ...history };
   h.pointer = h.pointer - 1;
   setHistory(h);
+  syncResistorLabelInput();
 }
 
 function redo() {
   if (history.pointer >= history.state.length - 1) return; //no more redos
-  vjs.redraw(history.state[history.pointer + 1]);
+  applyProgrammaticState(history.state[history.pointer + 1]);
   const h = { ...history };
   h.pointer = h.pointer + 1;
   setHistory(h);
+  syncResistorLabelInput();
 }
 
 const vjs = visiojs({
@@ -326,7 +344,20 @@ const vjs = visiojs({
 });
 window.onload = () => {
   vjs.init();
+  syncResistorLabelInput();
 };
+
+document.getElementById("apply-label").addEventListener("click", function () {
+  const input = document.getElementById("resistor-label");
+  const text = input.value;
+  const base = history.state[history.pointer];
+  if (!base) return;
+  const next = JSON.parse(JSON.stringify(base));
+  if (!next.shapes[LABEL_EDIT_SHAPE_INDEX]?.label) return;
+  next.shapes[LABEL_EDIT_SHAPE_INDEX].label.text = text;
+  vjs.applyState(next, { source: "user" });
+  syncResistorLabelInput();
+});
 
 // Delete button
 document.getElementById("delete").addEventListener("click", function () {
