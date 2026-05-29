@@ -123,7 +123,7 @@ function syncShapeLabel(shape, label) {
   }
 }
 
-export async function drawShape({ id, data, selectIt = false, selected, wireStart, snapAndClipToGrid, initialState, redrawWireOnShape, stateChanged, drawWire }) {
+export async function drawShape({ id, data, selectIt = false, selected, wireStart, snapAndClipToGrid, initialState, redrawWireOnShape, stateChanged, drawWire, removeWiresForShape }) {
   const divId = `shape_${id}`;
   const g = d3.select("#visiojs_shapes");
 
@@ -167,7 +167,7 @@ export async function drawShape({ id, data, selectIt = false, selected, wireStar
       selected.push(divId);
     }
     //add a clickable backround
-    addHoverRect(shape, id, initialState, redrawWireOnShape, selectIt, stateChanged);
+    addHoverRect(shape, id, initialState, redrawWireOnShape, selectIt, stateChanged, removeWiresForShape);
 
     syncShapeLabel(shape, label);
 
@@ -219,11 +219,13 @@ export async function drawShape({ id, data, selectIt = false, selected, wireStar
           selected.push(divId);
           shape.selectAll(".visiojs_hover_rect").style("opacity", "1");
           shape.selectAll(".visiojs_hover_rotate").style("visibility", null);
+          shape.selectAll(".visiojs_hover_disconnect").style("visibility", null);
         } else {
           selected.splice(index, 1);
           // shape.selectAll(".visiojs_hover_rect").remove();
           shape.selectAll(".visiojs_hover_rect").style("opacity", "0");
           shape.selectAll(".visiojs_hover_rotate").style("visibility", "hidden");
+          shape.selectAll(".visiojs_hover_disconnect").style("visibility", "hidden");
 
           img.attr("opacity", 0.5);
         }
@@ -239,7 +241,7 @@ export async function drawShape({ id, data, selectIt = false, selected, wireStar
   shape.attr("transform", `translate(${x}, ${y}) ${rotateStr}`);
 }
 
-function addHoverRect(shape, shapeID, initialState, redrawWireOnShape, selectIt, stateChanged) {
+function addHoverRect(shape, shapeID, initialState, redrawWireOnShape, selectIt, stateChanged, removeWiresForShape) {
   const bbox = shape.node().getBBox();
   const bgRect = shape
     .append("rect")
@@ -250,19 +252,24 @@ function addHoverRect(shape, shapeID, initialState, redrawWireOnShape, selectIt,
     .attr("class", "visiojs_hover_rect");
   if (!selectIt) bgRect.style("opacity", "0");
 
+  const btnSize = 16;
+  const rotateScale = 1.2;
+  const rotateBtnSize = btnSize * rotateScale;
+  const disconnectGap = 1;
+
   const [rotateX, rotateY] = [bbox.x + bbox.width + 10, bbox.y - 10];
   const rotateButton = shape
     .append("g")
-    .attr("width", "16")
-    .attr("height", "16")
+    .attr("width", btnSize)
+    .attr("height", btnSize)
     .attr("fill", "currentColor")
-    .attr("viewBox", "0 0 16 16")
-    .attr("transform", `translate(${rotateX}, ${rotateY})`)
+    .attr("viewBox", `0 0 ${btnSize} ${btnSize}`)
+    .attr("transform", `translate(${rotateX}, ${rotateY}) scale(${rotateScale})`)
     .attr("class", "visiojs_hover_rotate");
   if (!selectIt) rotateButton.style("visibility", "hidden");
   rotateButton.append("path").attr("fill-rule", "evenodd").attr("d", "M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z");
   rotateButton.append("path").attr("d", "M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466");
-  rotateButton.append("rect").attr("x", "0").attr("y", "0").attr("width", "16").attr("height", "16").attr("fill", "transparent"); //an area to click on
+  rotateButton.append("rect").attr("x", "0").attr("y", "0").attr("width", btnSize).attr("height", btnSize).attr("fill", "transparent"); //an area to click on
   rotateButton.on("click", function (e) {
     e.stopPropagation();
     const rotation = getGroupRotation(shape.attr("transform"));
@@ -275,6 +282,29 @@ function addHoverRect(shape, shapeID, initialState, redrawWireOnShape, selectIt,
     redrawWireOnShape({ shapeID: shapeID, save: true });
 
     stateChanged(initialState);
+  });
+
+  const [disconnectX, disconnectY] = [rotateX, rotateY + rotateBtnSize + disconnectGap];
+  const disconnectButton = shape
+    .append("g")
+    .attr("width", btnSize)
+    .attr("height", btnSize)
+    .attr("fill", "currentColor")
+    .attr("viewBox", `0 0 ${btnSize} ${btnSize}`)
+    .attr("transform", `translate(${disconnectX}, ${disconnectY}) scale(${rotateScale})`)
+    .attr("class", "visiojs_hover_disconnect");
+  if (!selectIt) disconnectButton.style("visibility", "hidden");
+  disconnectButton.append("circle").attr("cx", 4).attr("cy", 8).attr("r", 1.25).attr("fill", "currentColor");
+  disconnectButton.append("circle").attr("cx", 12).attr("cy", 8).attr("r", 1.25).attr("fill", "currentColor");
+  disconnectButton.append("path").attr("fill", "none").attr("stroke", "currentColor").attr("stroke-width", "1.5").attr("stroke-linecap", "round").attr("d", "M5.25 8 H6.75");
+  disconnectButton.append("path").attr("fill", "none").attr("stroke", "currentColor").attr("stroke-width", "1.5").attr("stroke-linecap", "round").attr("d", "M9.25 8 H10.75");
+  disconnectButton.append("path").attr("fill", "none").attr("stroke", "currentColor").attr("stroke-width", "1.5").attr("stroke-linecap", "round").attr("d", "M7.25 5.75 L8.75 10.25");
+  disconnectButton.append("rect").attr("x", "0").attr("y", "0").attr("width", btnSize).attr("height", btnSize).attr("fill", "transparent");
+  disconnectButton.on("click", function (e) {
+    e.stopPropagation();
+    if (removeWiresForShape(shapeID)) {
+      stateChanged(initialState);
+    }
   });
 }
 

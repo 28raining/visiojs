@@ -22,6 +22,10 @@
   stroke-dasharray: 5, 5;
   fill: transparent;
 }
+.visiojs_hover_rotate,
+.visiojs_hover_disconnect {
+  cursor: pointer;
+}
 /* .visiojs_shape {
   fill: transparent;
 }

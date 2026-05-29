@@ -169,10 +169,34 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
     }
   }
 
+  function removeWiresForShape(shapeID) {
+    var removed = false;
+    for (let i = 0; i < initialState.wires.length; i++) {
+      const w = initialState.wires[i];
+      if (!w) continue;
+      if (w.start.shapeID == shapeID || w.end.shapeID == shapeID) {
+        d3.select(`#wire_${i}`).remove();
+        initialState.wires[i] = null;
+        const wireId = `wire_${i}`;
+        const selIndex = selected.indexOf(wireId);
+        if (selIndex !== -1) selected.splice(selIndex, 1);
+        removed = true;
+      }
+    }
+    if (removed && selected.filter((s) => s.startsWith("wire")).length === 0) {
+      g_wholeThing.selectAll(".visiojs_selected_wire").classed("visiojs_selected_wire", false);
+      g_wholeThing.selectAll(".visiojs_selected_connector").classed("visiojs_selected_connector", false);
+      g_wholeThing.selectAll(".visiojs_elbow").remove();
+      d3.select("#visiojs_shapes").style("pointer-events", "auto").style("opacity", "1.0");
+    }
+    return removed;
+  }
+
   function deselectAll() {
     // console.log("deselecting all");
     g_wholeThing.selectAll(".visiojs_hover_rect").style("opacity", "0");
     g_wholeThing.selectAll(".visiojs_hover_rotate").style("visibility", "hidden");
+    g_wholeThing.selectAll(".visiojs_hover_disconnect").style("visibility", "hidden");
 
     // g_wholeThing.selectAll(".visiojs_hover_rotate").classed("visiojs_hover_rotate", false);
     g_wholeThing.selectAll(".visiojs_selected_wire").classed("visiojs_selected_wire", false);
@@ -275,6 +299,7 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
           redrawWireOnShape,
           stateChanged,
           drawWire,
+          removeWiresForShape,
         });
     }
     for (let id = 0; id < initialState["wires"].length; id++) {
@@ -394,6 +419,7 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
       redrawWireOnShape,
       stateChanged,
       drawWire,
+      removeWiresForShape,
     });
   }
 
@@ -407,16 +433,7 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
       const shapeID = s.split("_");
       if (shapeID[0] == "shape") {
         initialState.shapes[shapeID[1]] = null;
-        //remove the wires attached to the shape
-        initialState.wires = initialState.wires.map((w, i) => {
-          if (!w) return w;
-          if (w.start.shapeID == shapeID[1] || w.end.shapeID == shapeID[1]) {
-            d3.select(`#wire_${i}`).remove();
-            return null;
-          } else {
-            return w;
-          }
-        });
+        removeWiresForShape(shapeID[1]);
       } else if (shapeID[0] == "wire") {
         initialState.wires[shapeID[1]] = null;
       }
@@ -469,6 +486,7 @@ const visiojs = ({ initialState, stateChanged = () => {} }) => {
             redrawWireOnShape,
             stateChanged,
             drawWire,
+            removeWiresForShape,
           });
           redrawWireOnShape({ shapeID: s });
         }
